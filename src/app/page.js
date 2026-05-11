@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Head from 'next/head';
+import Image from 'next/image';
 import {
   FaArrowCircleRight, FaSearch, FaFilm, FaBookOpen,
   FaServer, FaMobileAlt, FaFire, FaDiscord,
@@ -27,11 +27,13 @@ function MediaCard({ item, type = 'anime' }) {
   return (
     <Link href={href} className="media-card group">
       <div className="media-card__poster">
-        <img
+        <Image
           src={imageUrl}
           alt={item.title}
-          loading="lazy"
+          fill
+          sizes="(max-width: 768px) 50vw, 25vw"
           className="media-card__img"
+          style={{ objectFit: 'cover' }}
         />
         <div className="media-card__overlay">
           <div className="media-card__play">
@@ -276,18 +278,6 @@ export default function RootPage() {
 
   return (
     <div className="ed-root">
-      <Head>
-        <title>EliasDex | Stream Anime & Read Manga Free — HD Quality</title>
-        <meta name="description" content="EliasDex — Watch HD anime and read manga online for free. 10,000+ episodes, 50,000+ chapters. No ads, fast servers, updated daily. The best platform for anime and manga lovers." />
-        <meta name="keywords" content="anime streaming free, read manga online, watch anime HD, best anime site, manga reader" />
-        <meta property="og:title" content="EliasDex — Free Anime Streaming & Manga Reading" />
-        <meta property="og:description" content="Stream thousands of anime in HD and read popular manga for free. No ads, blazing fast, updated every day." />
-        <meta property="og:image" content="/images/preview.jpg" />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <link rel="canonical" href="https://eliasdex.com" />
-      </Head>
-
       <Navbar />
 
       {/* ══════════════════ HERO ══════════════════ */}
@@ -346,12 +336,13 @@ export default function RootPage() {
           {/* Right — banner */}
           <div className="ed-hero__visual" aria-hidden="true">
             <div className="ed-hero__glow-ring" />
-            <img
+            <Image
               className="ed-hero__banner"
               src="/images/homeBanner.png"
               alt="Anime and Manga characters"
               width={480}
               height={480}
+              priority
             />
           </div>
         </div>
@@ -614,7 +605,7 @@ export default function RootPage() {
                     <FaStar key={i} className="inline text-amber-400" style={{ fontSize: '0.75rem' }} />
                   ))}
                 </div>
-                <p className="ed-testimonial-card__text">"{t.text}"</p>
+                <p className="ed-testimonial-card__text">&ldquo;{t.text}&rdquo;</p>
                 <div className="ed-testimonial-card__author">
                   <div className="ed-testimonial-card__avatar" aria-hidden="true">{t.avatar}</div>
                   <div>
@@ -637,7 +628,7 @@ export default function RootPage() {
               Frequently Asked <span className="ed-highlight">Questions</span>
             </h2>
             <p className="ed-section__sub">
-              Everything you need to know about EliasDex. Can't find your answer? Reach out to us on Discord.
+              Everything you need to know about EliasDex. Can&apos;t find your answer? Reach out to us on Discord.
             </p>
           </div>
           <div className="ed-faq-list" role="list">

@@ -1,7 +1,14 @@
-// src/app/layout.js
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import ClientLayout from "./ClientLayout";
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900", "1000"],
+  variable: "--font-nunito",
+});
 
 const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
@@ -9,12 +16,12 @@ export const metadata = {
   metadataBase: new URL(baseUrl),
   title: "EliasDex | Watch Free Anime, Online Anime Streaming - eliasdex",
   description:
-    "eliasdex to is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD eliasdex.shop, Anix, 9anime, Zoro, Animixplay.",
+    "eliasdex is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD eliasdex, Anix, 9anime, Zoro, Animixplay.",
   keywords:
     "eliasdex, eliasdex to, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch",
   robots: "index, follow",
   openGraph: {
-    title: "eliasdex | Watch Free Anime, Online Anime Streaming - eliasdex",
+    title: "EliasDex | Watch Free Anime, Online Anime Streaming - eliasdex",
     description:
       "eliasdex to is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD.",
     images: ["/images/preview.jpg"],
@@ -27,16 +34,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body>
+    <html lang="en" className={nunito.variable}>
+      <body className={nunito.className} suppressHydrationWarning={true}>
         <Providers>
           <ClientLayout>{children}</ClientLayout>
         </Providers>
