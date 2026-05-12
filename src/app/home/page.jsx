@@ -1,4 +1,3 @@
-// home/page.jsx — Fixed API race-condition + responsive overhaul
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -19,6 +18,7 @@ import {
 } from "react-icons/fa";
 import Head from "next/head";
 import Footer from "@/components/Footer";
+import Image from "next/image";
 
 /* ═══════════════════════════════════════════════════════════
    JIKAN API QUEUE — solves the rate-limit / inconsistency bug.
@@ -62,11 +62,17 @@ function useJikan(path, enabled = true) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
+  const retryRef = useRef(() => {});
 
-  const load = useCallback(() => {
-    if (!enabled || !path) return;
-    setLoading(true);
-    setError(null);
+  useEffect(() => {
+    mounted.current = true;
+    // If not enabled or no path, stop loading
+    if (!enabled || !path) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch data
     queue
       .add(path)
       .then((json) => {
@@ -81,17 +87,37 @@ function useJikan(path, enabled = true) {
           setLoading(false);
         }
       });
-  }, [path, enabled]);
 
-  useEffect(() => {
-    mounted.current = true;
-    load();
+    // Prepare retry function
+    const doRetry = () => {
+      if (!mounted.current) return;
+      setLoading(true);
+      setError(null);
+      queue
+        .add(path)
+        .then((json) => {
+          if (mounted.current) {
+            setData(json);
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          if (mounted.current) {
+            setError(err.message);
+            setLoading(false);
+          }
+        });
+    };
+    retryRef.current = doRetry;
+
     return () => {
       mounted.current = false;
     };
-  }, [load]);
+  }, [path, enabled]);
 
-  return { data, loading, error, retry: load };
+  const retry = useCallback(() => retryRef.current(), []);
+
+  return { data, loading, error, retry };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -203,15 +229,16 @@ const AnimeSection = ({ title, data, loading, error, onRetry }) => {
                 >
                   {idx + 1}
                 </span>
-                <img
-                  src={anime.images?.jpg?.small_image_url || "/placeholder.jpg"}
-                  alt={anime.title}
-                  className="w-9 h-13 sm:w-10 sm:h-14 object-cover rounded-lg shrink-0 shadow-md"
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src = "/placeholder.jpg";
-                  }}
-                />
+                <div className="relative w-9 h-[52px] sm:w-10 sm:h-[56px] shrink-0 shadow-md overflow-hidden rounded-lg">
+  <Image
+    src={anime.images?.jpg?.small_image_url || "/placeholder.jpg"}
+    alt={anime.title}
+    fill
+    sizes="(max-width: 640px) 36px, 40px"
+    className="object-cover"
+    loading="lazy"
+  />
+</div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-white/80 group-hover:text-white transition-colors">
                     {anime.title}
@@ -239,10 +266,12 @@ const ScheduleCard = ({ item }) => (
   >
     {/* Thumbnail */}
     <div className="relative shrink-0 w-12 h-16 sm:w-14 sm:h-20 rounded-lg overflow-hidden bg-white/10">
-      <img
+      <Image
         src={item.images?.jpg?.large_image_url || "/placeholder.jpg"}
         alt={item.title}
-        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        fill
+        sizes="(max-width: 640px) 48px, 56px"
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
         loading="lazy"
         onError={(e) => {
           e.currentTarget.src = "/placeholder.jpg";
@@ -291,14 +320,15 @@ const Home = () => {
   const [currentSpotlight, setCurrentSpotlight] = useState(0);
   const [autoSlide, setAutoSlide] = useState(true);
 
-  // Reset index when new data arrives to avoid out-of-bounds
-  useEffect(() => {
-    setCurrentSpotlight(0);
-  }, [spotlightList.length]);
+  // Safe index derived from state – no need to reset via effect
+  const safeIndex = spotlightList.length > 0 ? currentSpotlight % spotlightList.length : 0;
 
+  // Auto‑slide effect
   useEffect(() => {
     if (!autoSlide || spotlightList.length < 2) return;
-    const id = setInterval(() => setCurrentSpotlight((p) => (p + 1) % spotlightList.length), 5500);
+    const id = setInterval(() => {
+      setCurrentSpotlight((p) => (p + 1) % spotlightList.length);
+    }, 5500);
     return () => clearInterval(id);
   }, [autoSlide, spotlightList.length]);
 
@@ -346,7 +376,6 @@ const Home = () => {
   const scheduleAnime = scheduleData?.data || [];
 
   const getYear = (aired) => aired?.prop?.from?.year || "TBA";
-  const spotlight = spotlightList[currentSpotlight] ?? null;
 
   return (
     <div className="bg-[#09090b] text-white min-h-screen">
@@ -377,13 +406,14 @@ const Home = () => {
         </div>
       )}
 
-      {!spotlightLoading && !spotlightError && spotlight && (
+      {!spotlightLoading && !spotlightError && spotlightList.length > 0 && (
         <div className="relative w-full h-[48vh] sm:h-[54vh] md:h-[60vh] overflow-hidden">
           {/* BG */}
           <div className="absolute inset-0 z-0">
-            <img
-              src={spotlight.images?.jpg?.large_image_url || "/placeholder.jpg"}
-              alt={spotlight.title}
+            <Image
+              src={spotlightList[safeIndex]?.images?.jpg?.large_image_url || "/placeholder.jpg"}
+              alt={spotlightList[safeIndex]?.title}
+              fill
               className="w-full h-full object-cover object-top"
               onError={(e) => {
                 e.currentTarget.src = "/placeholder.jpg";
@@ -400,12 +430,12 @@ const Home = () => {
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  Airing Now · {currentSpotlight + 1}/{spotlightList.length}
+                  Airing Now · {safeIndex + 1}/{spotlightList.length}
                 </div>
 
                 {/* Title — line-clamp-2 so long titles never push content down */}
                 <h1 className="text-xl sm:text-3xl md:text-4xl font-black leading-tight mb-3 drop-shadow-xl line-clamp-2">
-                  {spotlight.title}
+                  {spotlightList[safeIndex]?.title}
                 </h1>
 
                 {/* Meta badges */}
@@ -414,21 +444,21 @@ const Home = () => {
                     <FaTv size={9} /> TV
                   </span>
                   <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg px-2 py-1 text-[10px] sm:text-xs">
-                    <FaCalendarAlt size={9} /> {getYear(spotlight.aired)}
+                    <FaCalendarAlt size={9} /> {getYear(spotlightList[safeIndex]?.aired)}
                   </span>
                   <span className="flex items-center gap-1 bg-black/40 backdrop-blur-sm border border-white/10 rounded-lg px-2 py-1 text-[10px] sm:text-xs">
                     <FaClock size={9} /> HD
                   </span>
-                  {spotlight.score && (
+                  {spotlightList[safeIndex]?.score && (
                     <span className="flex items-center gap-1 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 rounded-lg px-2 py-1 text-[10px] sm:text-xs font-bold">
-                      <FaStar size={9} /> {spotlight.score}
+                      <FaStar size={9} /> {spotlightList[safeIndex]?.score}
                     </span>
                   )}
                 </div>
 
                 {/* Genres */}
                 <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-2.5">
-                  {spotlight.genres?.slice(0, 4).map((g) => (
+                  {spotlightList[safeIndex]?.genres?.slice(0, 4).map((g) => (
                     <span
                       key={g.mal_id}
                       className="bg-violet-600/25 border border-violet-500/25 text-violet-200 rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs"
@@ -440,19 +470,19 @@ const Home = () => {
 
                 {/* Synopsis — strict 2-line clamp */}
                 <p className="text-white/60 text-xs sm:text-sm leading-relaxed mb-5 line-clamp-2">
-                  {spotlight.synopsis}
+                  {spotlightList[safeIndex]?.synopsis}
                 </p>
 
                 {/* CTA */}
                 <div className="flex flex-wrap gap-2 sm:gap-3">
                   <Link
-                    href={`/anime/${spotlight.mal_id}`}
+                    href={`/anime/${spotlightList[safeIndex]?.mal_id}`}
                     className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-violet-900/50 hover:shadow-violet-700/50 hover:scale-[1.02] text-xs sm:text-sm"
                   >
                     <FaPlay size={10} /> Watch Now
                   </Link>
                   <Link
-                    href={`/anime/${spotlight.mal_id}`}
+                    href={`/anime/${spotlightList[safeIndex]?.mal_id}`}
                     className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-semibold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-200 text-xs sm:text-sm"
                   >
                     <FaInfoCircle size={10} /> More Info
@@ -489,7 +519,7 @@ const Home = () => {
                 }}
                 aria-label={`Spotlight ${i + 1}`}
                 className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
-                  i === currentSpotlight ? "bg-violet-400 w-5 sm:w-6" : "bg-white/25 w-1 sm:w-1.5 hover:bg-white/50"
+                  i === safeIndex ? "bg-violet-400 w-5 sm:w-6" : "bg-white/25 w-1 sm:w-1.5 hover:bg-white/50"
                 }`}
               />
             ))}

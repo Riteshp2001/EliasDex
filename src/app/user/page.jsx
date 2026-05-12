@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Loader from "@/components/Loader";
+import Image from "next/image";
 
 export default function UserPage() {
   const router = useRouter();
   const { user, loading, isAuthenticated, userStats } = useAuth();
   const [history, setHistory] = useState([]);
   const [comicHistory, setComicHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true); // mulai dengan true
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -21,7 +22,7 @@ export default function UserPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    setLoadingHistory(true);
+    // loadingHistory sudah true, langsung fetch
     fetch("/api/user/history")
       .then((res) => res.json())
       .then((data) => setHistory(data.history ?? []))
@@ -450,7 +451,7 @@ export default function UserPage() {
         <header className="profile-header">
           <div className="avatar">
             {displayUser.profileImage ? (
-              <img src={displayUser.profileImage} alt="Profile" />
+              <Image src={displayUser.profileImage} alt="Profile" width={100} height={100} />
             ) : (
               (displayUser.name?.charAt(0)?.toUpperCase() ?? "U")
             )}
@@ -518,7 +519,9 @@ export default function UserPage() {
                       href={`/anime/${item.animeId}`}
                       className="history-row"
                     >
-                      <div className="thumb">{item.image ? <img src={item.image} alt={item.title} /> : "—"}</div>
+                      <div className="thumb">
+                        {item.image ? <Image src={item.image} alt={item.title} width={100} height={100} /> : "—"}
+                      </div>
                       <div className="info">
                         <div className="title">{item.title}</div>
                         <div className="episode">Episode {item.currentEp}</div>
@@ -551,7 +554,9 @@ export default function UserPage() {
                       href={`/comic/${item.comicId}`}
                       className="history-row"
                     >
-                      <div className="thumb">{item.image ? <img src={item.image} alt={item.title} /> : "—"}</div>
+                      <div className="thumb">
+                        {item.image ? <Image src={item.image} alt={item.title} width={100} height={100} /> : "—"}
+                      </div>
                       <div className="info">
                         <div className="title">{item.title}</div>
                         <div className="episode">Chapter {item.currentChapter}</div>
@@ -601,18 +606,6 @@ export default function UserPage() {
                 <strong>{Math.round(displayUser.levelProgress)}%</strong> to next level
               </div>
             </div>
-
-            {/* <div className="widget">
-              <div className="widget-label">Settings</div>
-              <Link href="/user/setting" className="settings-link">
-                Edit profile
-                <span className="arrow">→</span>
-              </Link>
-              <Link href="/user/setting" className="settings-link">
-                Preferences
-                <span className="arrow">→</span>
-              </Link>
-            </div> */}
           </aside>
         </div>
       </div>

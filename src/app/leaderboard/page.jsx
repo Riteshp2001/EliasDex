@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Loader from "@/components/Loader";
 import Footer from "@/components/Footer";
+import Image from "next/image";
 
 const MEDAL_COLORS = {
   1: { bg: "from-yellow-500 to-yellow-600", border: "border-yellow-400", medal: "🥇" },
@@ -26,22 +27,37 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, [activeTab]);
+    let cancelled = false;
 
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      const endpoint = activeTab === "levels" ? "/api/leaderboard/levels" : "/api/leaderboard/donations";
-      const response = await fetch(endpoint);
-      const data = await response.json();
-      setLeaderboard(data.leaderboard || []);
-    } catch (error) {
-      console.error("Failed to fetch leaderboard:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchLeaderboard = async () => {
+      // loading tidak diubah di sini karena efek sudah dimulai dengan loading=true
+      try {
+        const endpoint =
+          activeTab === "levels"
+            ? "/api/leaderboard/levels"
+            : "/api/leaderboard/donations";
+        const response = await fetch(endpoint);
+        const data = await response.json();
+        if (!cancelled) {
+          setLeaderboard(data.leaderboard || []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to fetch leaderboard:", error);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchLeaderboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   const getRankStyle = (rank) => {
     if (rank <= 3) return MEDAL_COLORS[rank];
@@ -60,15 +76,23 @@ export default function LeaderboardPage() {
         {/* Tab Navigation */}
         <div className="flex gap-4 mb-8 border-b border-[#1f2937]">
           <button
-            onClick={() => setActiveTab("levels")}
+            onClick={() => {
+              setActiveTab("levels");
+              setLoading(true); // langsung tunjukkan loading saat ganti tab
+            }}
             className={`px-6 py-3 font-semibold transition-all ${
-              activeTab === "levels" ? "text-[#f59e0b] border-b-2 border-[#f59e0b]" : "text-[#94a3b8] hover:text-white"
+              activeTab === "levels"
+                ? "text-[#f59e0b] border-b-2 border-[#f59e0b]"
+                : "text-[#94a3b8] hover:text-white"
             }`}
           >
             ⭐ Top Levels
           </button>
           <button
-            onClick={() => setActiveTab("donations")}
+            onClick={() => {
+              setActiveTab("donations");
+              setLoading(true);
+            }}
             className={`px-6 py-3 font-semibold transition-all ${
               activeTab === "donations"
                 ? "text-[#f59e0b] border-b-2 border-[#f59e0b]"
@@ -110,7 +134,13 @@ export default function LeaderboardPage() {
                       <div className="flex justify-center mb-4">
                         <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#f59e0b] bg-[#1f2937]">
                           {user.profileImage ? (
-                            <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                            <Image
+                              src={user.profileImage}
+                              alt={user.name}
+                              className="w-full h-full object-cover"
+                              width={80}
+                              height={80}
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-[#f59e0b]">
                               {user.name?.charAt(0)?.toUpperCase()}
@@ -122,8 +152,12 @@ export default function LeaderboardPage() {
                       <div className="text-center space-y-2">
                         {activeTab === "levels" ? (
                           <>
-                            <div className="text-4xl font-bold text-[#f59e0b]">Level {user.level}</div>
-                            <div className="text-sm text-[#94a3b8]">{user.totalXp?.toLocaleString()} XP</div>
+                            <div className="text-4xl font-bold text-[#f59e0b]">
+                              Level {user.level}
+                            </div>
+                            <div className="text-sm text-[#94a3b8]">
+                              {user.totalXp?.toLocaleString()} XP
+                            </div>
                           </>
                         ) : (
                           <>
@@ -141,7 +175,9 @@ export default function LeaderboardPage() {
 
                       {user.isDonator && (
                         <div className="mt-4 pt-4 border-t border-[#1f2937]">
-                          <p className="text-center text-xs text-[#f59e0b] font-semibold">✨ Supporting Creator</p>
+                          <p className="text-center text-xs text-[#f59e0b] font-semibold">
+                            ✨ Supporting Creator
+                          </p>
                         </div>
                       )}
                     </div>
@@ -167,7 +203,13 @@ export default function LeaderboardPage() {
                     {/* Profile Image */}
                     <div className="w-14 h-14 rounded-full overflow-hidden bg-[#1f2937] border-2 border-[#2d3748] flex-shrink-0">
                       {user.profileImage ? (
-                        <img src={user.profileImage} alt={user.name} className="w-full h-full object-cover" />
+                        <Image
+                          src={user.profileImage}
+                          alt={user.name}
+                          width={56}
+                          height={56}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-lg font-bold text-[#f59e0b]">
                           {user.name?.charAt(0)?.toUpperCase()}
@@ -179,7 +221,12 @@ export default function LeaderboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3
-                          className={`font-bold text-lg ${user.isDonator ? "text-transparent bg-clip-text bg-gradient-to-r " + DONOR_TIERS[user.donorTier]?.color : "text-white"}`}
+                          className={`font-bold text-lg ${
+                            user.isDonator
+                              ? "text-transparent bg-clip-text bg-gradient-to-r " +
+                                DONOR_TIERS[user.donorTier]?.color
+                              : "text-white"
+                          }`}
                         >
                           {user.name}
                         </h3>
@@ -187,7 +234,11 @@ export default function LeaderboardPage() {
                           <span
                             className="text-xs font-bold px-2 py-0.5 rounded-full bg-gradient-to-r text-white"
                             style={{
-                              backgroundImage: `linear-gradient(to right, ${DONOR_TIERS[user.donorTier]?.color.split(" ")[1]} 0%, ${DONOR_TIERS[user.donorTier]?.color.split(" ")[2]} 100%)`,
+                              backgroundImage: `linear-gradient(to right, ${
+                                DONOR_TIERS[user.donorTier]?.color.split(" ")[1]
+                              } 0%, ${
+                                DONOR_TIERS[user.donorTier]?.color.split(" ")[2]
+                              } 100%)`,
                             }}
                           >
                             ✨ {DONOR_TIERS[user.donorTier]?.badge.split(" ")[0]}
@@ -201,8 +252,12 @@ export default function LeaderboardPage() {
                     <div className="text-right flex-shrink-0">
                       {activeTab === "levels" ? (
                         <>
-                          <div className="text-2xl font-bold text-[#f59e0b]">Lv{user.level}</div>
-                          <div className="text-xs text-[#94a3b8]">{(user.totalXp || 0).toLocaleString()} XP</div>
+                          <div className="text-2xl font-bold text-[#f59e0b]">
+                            Lv{user.level}
+                          </div>
+                          <div className="text-xs text-[#94a3b8]">
+                            {(user.totalXp || 0).toLocaleString()} XP
+                          </div>
                         </>
                       ) : (
                         <>
@@ -224,7 +279,9 @@ export default function LeaderboardPage() {
         {activeTab === "donations" && (
           <div className="mt-12 text-center p-8 rounded-2xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] bg-opacity-10 border border-[#f59e0b]">
             <h3 className="text-2xl font-bold mb-2">Want to Support Us?</h3>
-            <p className="text-[#94a3b8] mb-4">Become a donor and unlock special perks!</p>
+            <p className="text-[#94a3b8] mb-4">
+              Become a donor and unlock special perks!
+            </p>
             <Link
               href="/donate"
               className="inline-block px-8 py-3 bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-black font-bold rounded-lg hover:from-[#d97706] hover:to-[#b85f00] transition-all"
@@ -238,4 +295,4 @@ export default function LeaderboardPage() {
       <Footer />
     </div>
   );
-}
+};
