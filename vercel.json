@@ -1,0 +1,19 @@
+{
+  "version": 3,
+  "build": {
+    "command": "pnpm build",
+    "env": {
+      "NEXT_PUBLIC_URL": "https://eliasdex.farelhanafi.my.id"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    }
+  ]
+}
