@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Sitemap: /sitemap.xml
+# If you deploy to a custom domain, keep this path as /sitemap.xml
