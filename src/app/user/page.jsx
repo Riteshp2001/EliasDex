@@ -102,6 +102,82 @@ export default function UserPage() {
           color: #e4e4e7;
           overflow: hidden;
           border: 2px solid #27272a;
+          position: relative;
+        }
+
+        .avatar.donator {
+          border: 3px solid transparent;
+          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                      linear-gradient(135deg, #f59e0b, #fbbf24) border-box;
+          animation: donorPulse 2s ease-in-out infinite;
+        }
+
+        .avatar.donator.bronze {
+          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                      linear-gradient(135deg, #d97706, #ea580c) border-box;
+        }
+
+        .avatar.donator.silver {
+          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                      linear-gradient(135deg, #a1a1a1, #d4d4d8) border-box;
+        }
+
+        .avatar.donator.gold {
+          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                      linear-gradient(135deg, #f59e0b, #fbbf24) border-box;
+        }
+
+        .avatar.donator.platinum {
+          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+                      linear-gradient(135deg, #818cf8, #c084fc) border-box;
+        }
+
+        @keyframes donorPulse {
+          0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        }
+
+        .donor-badge {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: 2px solid #0a0a0a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: bold;
+          z-index: 10;
+          animation: badgeFloat 3s ease-in-out infinite;
+        }
+
+        .donor-badge.bronze {
+          background: linear-gradient(135deg, #d97706, #ea580c);
+          color: white;
+        }
+
+        .donor-badge.silver {
+          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
+          color: #1a1a1a;
+        }
+
+        .donor-badge.gold {
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          color: #1a1a1a;
+        }
+
+        .donor-badge.platinum {
+          background: linear-gradient(135deg, #818cf8, #c084fc);
+          color: white;
+        }
+
+        @keyframes badgeFloat {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-3px); }
         }
 
         .avatar img {
@@ -122,10 +198,92 @@ export default function UserPage() {
           margin-bottom: 0.25rem;
         }
 
+        .display-name.donator {
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          font-weight: 700;
+          animation: nameGlow 2s ease-in-out infinite alternate;
+        }
+
+        .display-name.donator.bronze {
+          background: linear-gradient(135deg, #d97706, #ea580c);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .display-name.donator.silver {
+          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .display-name.donator.gold {
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .display-name.donator.platinum {
+          background: linear-gradient(135deg, #818cf8, #c084fc);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        @keyframes nameGlow {
+          0% { filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.3)); }
+          100% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)); }
+        }
+
         .username {
           font-size: 0.875rem;
           color: #71717a;
           letter-spacing: 0.025em;
+        }
+
+        .donor-status {
+          margin-top: 0.5rem;
+        }
+
+        .donor-tier-badge {
+          display: inline-block;
+          padding: 0.25rem 0.75rem;
+          border-radius: 1rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          animation: badgeShine 3s ease-in-out infinite;
+        }
+
+        .donor-tier-badge.bronze {
+          background: linear-gradient(135deg, #d97706, #ea580c);
+          color: white;
+        }
+
+        .donor-tier-badge.silver {
+          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
+          color: #1a1a1a;
+        }
+
+        .donor-tier-badge.gold {
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          color: #1a1a1a;
+        }
+
+        .donor-tier-badge.platinum {
+          background: linear-gradient(135deg, #818cf8, #c084fc);
+          color: white;
+        }
+
+        @keyframes badgeShine {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
         }
 
         .edit-profile-btn {
@@ -449,16 +607,28 @@ export default function UserPage() {
       <div className="page-container">
         {/* Header */}
         <header className="profile-header">
-          <div className="avatar">
+          <div className={`avatar ${displayUser.isDonator ? `donator ${displayUser.donorTier || "bronze"}` : ""}`}>
             {displayUser.profileImage ? (
               <Image src={displayUser.profileImage} alt="Profile" width={100} height={100} />
             ) : (
               (displayUser.name?.charAt(0)?.toUpperCase() ?? "U")
             )}
+            {displayUser.isDonator && <div className={`donor-badge ${displayUser.donorTier || "bronze"}`}>✨</div>}
           </div>
           <div className="user-details">
-            <h1 className="display-name">{displayUser.name}</h1>
+            <h1
+              className={`display-name ${displayUser.isDonator ? `donator ${displayUser.donorTier || "bronze"}` : ""}`}
+            >
+              {displayUser.name}
+            </h1>
             <p className="username">@{displayUser.username}</p>
+            {displayUser.isDonator && (
+              <div className="donor-status">
+                <span className={`donor-tier-badge ${displayUser.donorTier || "bronze"}`}>
+                  {displayUser.donorTier?.charAt(0).toUpperCase() + displayUser.donorTier?.slice(1)} Donor
+                </span>
+              </div>
+            )}
           </div>
           <Link href="/user/setting" className="edit-profile-btn">
             Edit Profile

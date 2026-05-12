@@ -12,8 +12,16 @@ import { useAuth } from "@/context/AuthContext";
 const NAV_LINKS = [
   { label: "Most Popular", href: "/search?order_by=popularity&sfw=false", icon: <FaFire size={13} /> },
   { label: "Top Favorites", href: "/search?order_by=favorites&sfw=false", icon: <FaStar size={13} /> },
-  { label: "New Releases", href: "/search?status=airing&order_by=start_date&sfw=false", icon: <MdNewReleases size={14} /> },
-  { label: "Upcoming", href: "/search?status=upcoming&order_by=start_date&sfw=false", icon: <FaCalendarAlt size={13} /> },
+  {
+    label: "New Releases",
+    href: "/search?status=airing&order_by=start_date&sfw=false",
+    icon: <MdNewReleases size={14} />,
+  },
+  {
+    label: "Upcoming",
+    href: "/search?status=upcoming&order_by=start_date&sfw=false",
+    icon: <FaCalendarAlt size={13} />,
+  },
 ];
 
 const MOCK_NOTIFICATIONS = [
@@ -78,15 +86,15 @@ const Header = () => {
         .hdr-bar {
           position: fixed;
           top: 0; left: 0; right: 0;
-          background: rgba(15,15,20,0.92);
+          background: rgba(15, 15, 20, 0);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-bottom: 1px solid rgba(255,255,255,0.06);
           transition: box-shadow 0.3s ease, background 0.3s ease;
         }
         .hdr-bar.scrolled {
-          box-shadow: 0 4px 32px rgba(0,0,0,0.4);
-          background: rgba(10,10,15,0.97);
+          box-shadow: 0 4px 32px rgba(0, 0, 0, 0);
+          background: rgba(10, 10, 15, 0.27);
         }
 
         /* ── Main row: left takes remaining space, right is fixed ── */
@@ -324,18 +332,44 @@ const Header = () => {
           align-items: center;
           justify-content: center;
           font-size: 10px;
+          animation: donorGlow 2s ease-in-out infinite alternate;
+          box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+        }
+        @keyframes donorGlow {
+          0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+          100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
         }
         .hdr-donor-badge.bronze {
           background: linear-gradient(135deg, #d97706, #ea580c);
+          animation: donorGlowBronze 2s ease-in-out infinite alternate;
         }
         .hdr-donor-badge.silver {
           background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
+          animation: donorGlowSilver 2s ease-in-out infinite alternate;
         }
         .hdr-donor-badge.gold {
           background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          animation: donorGlowGold 2s ease-in-out infinite alternate;
         }
         .hdr-donor-badge.platinum {
           background: linear-gradient(135deg, #818cf8, #c084fc);
+          animation: donorGlowPlatinum 2s ease-in-out infinite alternate;
+        }
+        @keyframes donorGlowBronze {
+          0% { box-shadow: 0 0 5px rgba(217, 119, 6, 0.3); }
+          100% { box-shadow: 0 0 15px rgba(217, 119, 6, 0.8); }
+        }
+        @keyframes donorGlowSilver {
+          0% { box-shadow: 0 0 5px rgba(161, 161, 161, 0.3); }
+          100% { box-shadow: 0 0 15px rgba(161, 161, 161, 0.8); }
+        }
+        @keyframes donorGlowGold {
+          0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.4); }
+          100% { box-shadow: 0 0 15px rgba(245, 158, 11, 1); }
+        }
+        @keyframes donorGlowPlatinum {
+          0% { box-shadow: 0 0 5px rgba(129, 140, 248, 0.4); }
+          100% { box-shadow: 0 0 15px rgba(129, 140, 248, 1); }
         }
         .hdr-avatar-name {
           font-size: 13px;

@@ -83,7 +83,7 @@ input:focus {
   inset: 0;
   backdrop-filter: blur(10px);
   background-color: #222831b4;
-  z-index: 5000;
+  z-index: 50;
 }
 .bg-active {
   position: fixed;
@@ -92,6 +92,9 @@ input:focus {
 }
 .sidebar {
   scrollbar-width: none;
+}
+.app-sidebar::-webkit-scrollbar {
+  display: none;
 }
 .cover-wrapper {
   position: absolute;
@@ -177,4 +180,3 @@ input:focus {
 .opacityBg {
   /* kosong, tidak perlu style */
 }
-

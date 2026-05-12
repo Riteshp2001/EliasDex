@@ -32,10 +32,7 @@ export default function LeaderboardPage() {
     const fetchLeaderboard = async () => {
       // loading tidak diubah di sini karena efek sudah dimulai dengan loading=true
       try {
-        const endpoint =
-          activeTab === "levels"
-            ? "/api/leaderboard/levels"
-            : "/api/leaderboard/donations";
+        const endpoint = activeTab === "levels" ? "/api/leaderboard/levels" : "/api/leaderboard/donations";
         const response = await fetch(endpoint);
         const data = await response.json();
         if (!cancelled) {
@@ -66,6 +63,42 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-white">
+      <style>{`
+        @keyframes donorBadgeGlow {
+          0% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
+          100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.8); }
+        }
+
+        .donator-card {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .donator-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.1), transparent);
+          animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+
+        .donator-highlight {
+          animation: highlightPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes highlightPulse {
+          0%, 100% { background-color: rgba(245, 158, 11, 0.05); }
+          50% { background-color: rgba(245, 158, 11, 0.1); }
+        }
+      `}</style>
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-12">
@@ -81,9 +114,7 @@ export default function LeaderboardPage() {
               setLoading(true); // langsung tunjukkan loading saat ganti tab
             }}
             className={`px-6 py-3 font-semibold transition-all ${
-              activeTab === "levels"
-                ? "text-[#f59e0b] border-b-2 border-[#f59e0b]"
-                : "text-[#94a3b8] hover:text-white"
+              activeTab === "levels" ? "text-[#f59e0b] border-b-2 border-[#f59e0b]" : "text-[#94a3b8] hover:text-white"
             }`}
           >
             ⭐ Top Levels
@@ -122,9 +153,11 @@ export default function LeaderboardPage() {
                   <div
                     key={user.username}
                     onClick={() => router.push(`/profile/${user.username}`)}
-                    className={`relative cursor-pointer group overflow-hidden rounded-2xl bg-gradient-to-b ${rankStyle.bg} p-0.5 hover:scale-105 transition-transform`}
+                    className={`relative cursor-pointer group overflow-hidden rounded-2xl bg-gradient-to-b ${rankStyle.bg} p-0.5 hover:scale-105 transition-transform ${user.isDonator ? "donator-card" : ""}`}
                   >
-                    <div className="bg-[#111827] rounded-2xl p-6 relative z-10">
+                    <div
+                      className={`bg-[#111827] rounded-2xl p-6 relative z-10 ${user.isDonator ? "donator-highlight" : ""}`}
+                    >
                       <div className="text-center mb-4">
                         <div className="text-5xl mb-2">{rankStyle.medal}</div>
                         <h3 className="text-2xl font-bold">{user.name}</h3>
@@ -152,12 +185,8 @@ export default function LeaderboardPage() {
                       <div className="text-center space-y-2">
                         {activeTab === "levels" ? (
                           <>
-                            <div className="text-4xl font-bold text-[#f59e0b]">
-                              Level {user.level}
-                            </div>
-                            <div className="text-sm text-[#94a3b8]">
-                              {user.totalXp?.toLocaleString()} XP
-                            </div>
+                            <div className="text-4xl font-bold text-[#f59e0b]">Level {user.level}</div>
+                            <div className="text-sm text-[#94a3b8]">{user.totalXp?.toLocaleString()} XP</div>
                           </>
                         ) : (
                           <>
@@ -165,7 +194,19 @@ export default function LeaderboardPage() {
                               Rp{(user.totalDonations || 0).toLocaleString()}
                             </div>
                             <div
-                              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r ${DONOR_TIERS[user.donorTier]?.color}`}
+                              className={`inline-block px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r ${DONOR_TIERS[user.donorTier]?.color} animate-pulse shadow-lg`}
+                              style={{
+                                animation: `donorBadgeGlow 2s ease-in-out infinite alternate`,
+                                boxShadow: `0 0 10px ${
+                                  user.donorTier === "gold"
+                                    ? "rgba(245, 158, 11, 0.5)"
+                                    : user.donorTier === "platinum"
+                                      ? "rgba(129, 140, 248, 0.5)"
+                                      : user.donorTier === "silver"
+                                        ? "rgba(161, 161, 161, 0.5)"
+                                        : "rgba(217, 119, 6, 0.5)"
+                                }`,
+                              }}
                             >
                               {DONOR_TIERS[user.donorTier]?.badge || "Donator"}
                             </div>
@@ -175,9 +216,7 @@ export default function LeaderboardPage() {
 
                       {user.isDonator && (
                         <div className="mt-4 pt-4 border-t border-[#1f2937]">
-                          <p className="text-center text-xs text-[#f59e0b] font-semibold">
-                            ✨ Supporting Creator
-                          </p>
+                          <p className="text-center text-xs text-[#f59e0b] font-semibold">✨ Supporting Creator</p>
                         </div>
                       )}
                     </div>
@@ -223,8 +262,7 @@ export default function LeaderboardPage() {
                         <h3
                           className={`font-bold text-lg ${
                             user.isDonator
-                              ? "text-transparent bg-clip-text bg-gradient-to-r " +
-                                DONOR_TIERS[user.donorTier]?.color
+                              ? "text-transparent bg-clip-text bg-gradient-to-r " + DONOR_TIERS[user.donorTier]?.color
                               : "text-white"
                           }`}
                         >
@@ -236,9 +274,7 @@ export default function LeaderboardPage() {
                             style={{
                               backgroundImage: `linear-gradient(to right, ${
                                 DONOR_TIERS[user.donorTier]?.color.split(" ")[1]
-                              } 0%, ${
-                                DONOR_TIERS[user.donorTier]?.color.split(" ")[2]
-                              } 100%)`,
+                              } 0%, ${DONOR_TIERS[user.donorTier]?.color.split(" ")[2]} 100%)`,
                             }}
                           >
                             ✨ {DONOR_TIERS[user.donorTier]?.badge.split(" ")[0]}
@@ -252,12 +288,8 @@ export default function LeaderboardPage() {
                     <div className="text-right flex-shrink-0">
                       {activeTab === "levels" ? (
                         <>
-                          <div className="text-2xl font-bold text-[#f59e0b]">
-                            Lv{user.level}
-                          </div>
-                          <div className="text-xs text-[#94a3b8]">
-                            {(user.totalXp || 0).toLocaleString()} XP
-                          </div>
+                          <div className="text-2xl font-bold text-[#f59e0b]">Lv{user.level}</div>
+                          <div className="text-xs text-[#94a3b8]">{(user.totalXp || 0).toLocaleString()} XP</div>
                         </>
                       ) : (
                         <>
@@ -279,9 +311,7 @@ export default function LeaderboardPage() {
         {activeTab === "donations" && (
           <div className="mt-12 text-center p-8 rounded-2xl bg-gradient-to-r from-[#f59e0b] to-[#d97706] bg-opacity-10 border border-[#f59e0b]">
             <h3 className="text-2xl font-bold mb-2">Want to Support Us?</h3>
-            <p className="text-[#94a3b8] mb-4">
-              Become a donor and unlock special perks!
-            </p>
+            <p className="text-[#94a3b8] mb-4">Become a donor and unlock special perks!</p>
             <Link
               href="/donate"
               className="inline-block px-8 py-3 bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-black font-bold rounded-lg hover:from-[#d97706] hover:to-[#b85f00] transition-all"
@@ -295,4 +325,4 @@ export default function LeaderboardPage() {
       <Footer />
     </div>
   );
-};
+}
