@@ -56,59 +56,64 @@ const queue = (() => {
   };
 })();
 
-/* ── Custom hook built on the queue ── */
+/* ── Custom hook built on the queue (no synchronous setState) ── */
 function useJikan(path, enabled = true) {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
+  const pathRef = useRef(path);
+  const enabledRef = useRef(enabled);
   const retryRef = useRef(() => {});
+
+  // Derived loading state – true only when we expect data and haven't received it yet
+  const loading = enabled && !!path && data === null && error === null;
 
   useEffect(() => {
     mounted.current = true;
-    // If not enabled or no path, stop loading
+    pathRef.current = path;
+    enabledRef.current = enabled;
+
     if (!enabled || !path) {
-      setLoading(false);
       return;
     }
 
-    // Fetch data
-    queue
-      .add(path)
-      .then((json) => {
-        if (mounted.current) {
-          setData(json);
-          setLoading(false);
-        }
-      })
-      .catch((err) => {
-        if (mounted.current) {
-          setError(err.message);
-          setLoading(false);
-        }
-      });
-
-    // Prepare retry function
-    const doRetry = () => {
-      if (!mounted.current) return;
-      setLoading(true);
-      setError(null);
+    const doFetch = () => {
       queue
         .add(path)
         .then((json) => {
-          if (mounted.current) {
+          if (mounted.current && pathRef.current === path && enabledRef.current) {
             setData(json);
-            setLoading(false);
+            setError(null); // clear any previous error
           }
         })
         .catch((err) => {
-          if (mounted.current) {
+          if (mounted.current && pathRef.current === path && enabledRef.current) {
             setError(err.message);
-            setLoading(false);
           }
         });
     };
-    retryRef.current = doRetry;
+
+    doFetch();
+
+    retryRef.current = () => {
+      if (!mounted.current) return;
+      // Reset data & error to trigger loading state
+      setData(null);
+      setError(null);
+      queue
+        .add(pathRef.current)
+        .then((json) => {
+          if (mounted.current && pathRef.current === path && enabledRef.current) {
+            setData(json);
+            setError(null);
+          }
+        })
+        .catch((err) => {
+          if (mounted.current && pathRef.current === path && enabledRef.current) {
+            setError(err.message);
+          }
+        });
+    };
 
     return () => {
       mounted.current = false;
@@ -230,15 +235,15 @@ const AnimeSection = ({ title, data, loading, error, onRetry }) => {
                   {idx + 1}
                 </span>
                 <div className="relative w-9 h-[52px] sm:w-10 sm:h-[56px] shrink-0 shadow-md overflow-hidden rounded-lg">
-  <Image
-    src={anime.images?.jpg?.small_image_url || "/placeholder.jpg"}
-    alt={anime.title}
-    fill
-    sizes="(max-width: 640px) 36px, 40px"
-    className="object-cover"
-    loading="lazy"
-  />
-</div>
+                  <Image
+                    src={anime.images?.jpg?.small_image_url || "/placeholder.jpg"}
+                    alt={anime.title}
+                    fill
+                    sizes="(max-width: 640px) 36px, 40px"
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-xs sm:text-sm leading-tight line-clamp-2 text-white/80 group-hover:text-white transition-colors">
                     {anime.title}

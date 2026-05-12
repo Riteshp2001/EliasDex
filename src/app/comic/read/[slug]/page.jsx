@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import axios from "axios";
+import Image from "next/image";
 
 const ReadComic = () => {
   const router = useRouter();
@@ -357,11 +358,11 @@ const ReadComic = () => {
         <div className="max-w-4xl mx-auto">
           {pages.map((page, index) => (
             <div key={index} className="relative">
-              <img
+              <Image
                 src={page}
                 alt={`Halaman ${index + 1}`}
-                width="800"
-                height="1200"
+                width={800}
+                height={1200}
                 loading={index < 2 ? "eager" : "lazy"}
                 decoding="async"
                 className="w-full h-auto object-contain block"

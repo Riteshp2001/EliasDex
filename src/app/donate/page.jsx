@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Loader from "@/components/Loader";
 import Footer from "@/components/Footer";
+import Script from 'next/script';
 
 const DONATION_TIERS = {
   bronze: {
@@ -250,10 +251,11 @@ export default function DonatePage() {
       </div>
 
       {/* Load Midtrans Snap */}
-      <script
-        src="https://app.sandbox.midtrans.com/snap/snap.js"
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-      />
+      <Script
+  src="https://app.sandbox.midtrans.com/snap/snap.js"
+  data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+  strategy="afterInteractive" // Ini kunci agar tidak render-blocking
+/>
 
       <Footer />
     </div>

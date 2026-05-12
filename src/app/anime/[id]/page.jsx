@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, useCallback, memo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Head from "next/head";
+import Image from "next/image";
 import {
   FaPlay,
   FaStar,
@@ -30,9 +31,6 @@ import Loader from "@/components/Loader";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/context/AuthContext";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────────────────────────────────────
 const COLORS = {
   bg: "#0B0E14",
   surface: "#151921",
@@ -46,9 +44,6 @@ const COLORS = {
   mutedDim: "#4B5563",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
 const fmt = (n) => n?.toLocaleString?.() ?? "—";
 const fmtScore = (s) => (s ? s.toFixed(2) : "N/A");
 const scoreColor = (s) => {
@@ -83,9 +78,6 @@ const epColor = (ep) => {
   return EP_COLORS.AbsoluteCinema;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUB-COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
 const DetailRow = memo(({ label, value }) => {
   if (!value) return null;
   return (
@@ -122,12 +114,8 @@ const Tag = memo(({ children, amber = false }) => (
 ));
 Tag.displayName = "Tag";
 
-// ── PLAYER (FIX: menggunakan embed episode, bukan trailer) ───────────────────
 const Player = memo(
   ({ animeId, currentEp, category, onCategoryChange, hasPrev, hasNext, onPrev, onNext }) => {
-    // Ganti dengan embed provider yang benar, misal:
-    // https://megaplay.buzz/stream/mal/${animeId}/${currentEp?.mal_id}/${category}
-    // atau gunakan environment variable
     const embedUrl = `https://megaplay.buzz/stream/mal/${animeId}/${currentEp?.mal_id ? currentEp.mal_id : 1}/${category}`;
 
     return (
@@ -146,7 +134,6 @@ const Player = memo(
           />
         </div>
 
-        {/* Episode title + nav + sub/dub buttons */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-1.5">
             {["sub", "dub"].map((type) => (
@@ -201,7 +188,6 @@ const Player = memo(
 );
 Player.displayName = "Player";
 
-// ── EPISODE CARD ────────────────────────────────────────────────────────────
 const EpisodeCard = memo(({ ep, isActive, layout, onClick, progress }) => {
   const color = epColor(ep);
   const percent = progress?.percent ?? 0;
@@ -293,7 +279,6 @@ const EpisodeCard = memo(({ ep, isActive, layout, onClick, progress }) => {
 });
 EpisodeCard.displayName = "EpisodeCard";
 
-// ── PAGINATION ───────────────────────────────────────────────────────────────
 const Pagination = memo(({ page, total, onChange }) => {
   if (total <= 1) return null;
   return (
@@ -345,7 +330,6 @@ const Pagination = memo(({ page, total, onChange }) => {
 });
 Pagination.displayName = "Pagination";
 
-// ── CHARACTER CARD ───────────────────────────────────────────────────────────
 const CharCard = memo(({ char }) => {
   const cName = char.character?.name ?? "Unknown";
   const cImg = char.character?.images?.jpg?.image_url;
@@ -357,7 +341,7 @@ const CharCard = memo(({ char }) => {
       style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}` }}
     >
       <div className="flex items-center gap-2 px-2.5 py-2 flex-1">
-        {cImg && <img src={cImg} alt={cName} className="w-10 h-12 object-cover rounded-md shrink-0" />}
+        {cImg && <Image src={cImg} alt={cName} className="w-10 h-12 object-cover rounded-md shrink-0" width={40} height={48} />}
         <div>
           <p className="font-semibold text-[#E2E8F0]">{cName}</p>
           <p
@@ -375,10 +359,12 @@ const CharCard = memo(({ char }) => {
             <p className="text-[10px] text-[#8892A4] mt-0.5">Japanese</p>
           </div>
           {va.person?.images?.jpg?.image_url && (
-            <img
+            <Image
               src={va.person.images.jpg.image_url}
               alt={va.person.name}
               className="w-10 h-12 object-cover rounded-md shrink-0"
+              width={40}
+              height={48}
             />
           )}
         </div>
@@ -388,7 +374,6 @@ const CharCard = memo(({ char }) => {
 });
 CharCard.displayName = "CharCard";
 
-// ── ANIME CARD (Recommendations) ─────────────────────────────────────────────
 const AnimeCard = memo(({ entry }) => {
   const title = entry?.title ?? "?";
   const img = entry?.images?.jpg?.image_url;
@@ -402,7 +387,7 @@ const AnimeCard = memo(({ entry }) => {
     >
       <div className="relative" style={{ paddingBottom: "140%" }}>
         {img ? (
-          <img src={img} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+          <Image src={img} alt={title} className="absolute inset-0 w-full h-full object-cover" width={100} height={140} />
         ) : (
           <div className="absolute inset-0 bg-[#1A2030]" />
         )}
@@ -448,16 +433,12 @@ const shouldSendProgress = (lastSent, next) => {
   return Date.now() - (lastSent.sentAt || 0) >= 20000;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AnimePage() {
   const { id } = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const epFromUrl = Number(searchParams.get("ep")) || null;
-  const [activeEp, setActiveEp] = useState(epFromUrl);
   const [epPage, setEpPage] = useState(1);
   const [layout, setLayout] = useState("grid");
   const [tab, setTab] = useState("episodes");
@@ -510,32 +491,42 @@ export default function AnimePage() {
   const characters = charData?.data ?? [];
   const recommendations = recData?.data ?? [];
 
-  useEffect(() => {
-    if (!activeEp && episodes.length > 0) {
-      const first = episodes[0].mal_id;
-      setActiveEp(first);
-      router.replace(`/anime/${id}?ep=${first}`, { scroll: false });
-    }
-  }, [episodes, activeEp, id, router]);
+  // activeEp sekarang pure derivation dari URL dan episodes, ga butuh state lagi
+  const activeEp = useMemo(() => {
+    if (episodes.length === 0) return null;
+    if (epFromUrl && episodes.some((e) => e.mal_id === epFromUrl)) return epFromUrl;
+    return episodes[0]?.mal_id ?? null;
+  }, [epFromUrl, episodes]);
 
   const currentEp = useMemo(() => episodes.find((e) => e.mal_id === activeEp) ?? episodes[0], [episodes, activeEp]);
   const currentIdx = episodes.findIndex((e) => e.mal_id === activeEp);
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < episodes.length - 1;
 
+  // Navigasi episode (hanya ubah URL)
+  const navigateToEp = useCallback(
+    (epId) => {
+      router.replace(`/anime/${id}?ep=${epId}`, { scroll: false });
+    },
+    [id, router],
+  );
+
   const handlePrev = useCallback(() => {
     if (!hasPrev) return;
-    const ep = episodes[currentIdx - 1].mal_id;
-    setActiveEp(ep);
-    router.replace(`/anime/${id}?ep=${ep}`, { scroll: false });
-  }, [hasPrev, currentIdx, episodes, id, router]);
+    navigateToEp(episodes[currentIdx - 1].mal_id);
+  }, [hasPrev, currentIdx, episodes, navigateToEp]);
 
   const handleNext = useCallback(() => {
     if (!hasNext) return;
-    const ep = episodes[currentIdx + 1].mal_id;
-    setActiveEp(ep);
-    router.replace(`/anime/${id}?ep=${ep}`, { scroll: false });
-  }, [hasNext, currentIdx, episodes, id, router]);
+    navigateToEp(episodes[currentIdx + 1].mal_id);
+  }, [hasNext, currentIdx, episodes, navigateToEp]);
+
+  const handleSelectEp = useCallback(
+    (epId) => {
+      navigateToEp(epId);
+    },
+    [navigateToEp],
+  );
 
   const lastSentProgressRef = useRef({ episodeId: null, percent: 0, sentAt: 0 });
   const latestProgressRef = useRef(null);
@@ -560,7 +551,6 @@ export default function AnimePage() {
         if (!shouldSendProgress(lastSentProgressRef.current, normalized)) return;
 
         try {
-          // Use the correct API endpoint with XP system
           await updateWatchProgress(
             animeId,
             episodeId,
@@ -656,7 +646,7 @@ export default function AnimePage() {
     return () => window.removeEventListener("beforeunload", sendUnloadProgress);
   }, []);
 
-  // Track watch progress when episode changes
+  // Track watch progress when episode changes (tetap aman karena setState di dalam callback async)
   useEffect(() => {
     if (isAuthenticated && currentEp && anime?.data && id) {
       const episodeNumber = currentEp.mal_id;
@@ -673,14 +663,6 @@ export default function AnimePage() {
       });
     }
   }, [currentEp, isAuthenticated, id, anime?.data, episodes.length, updateWatchProgress]);
-
-  const handleSelectEp = useCallback(
-    (epId) => {
-      setActiveEp(epId);
-      router.replace(`/anime/${id}?ep=${epId}`, { scroll: false });
-    },
-    [id, router],
-  );
 
   const handlePageChange = useCallback((p) => {
     setEpPage(p);
@@ -716,65 +698,6 @@ export default function AnimePage() {
         </Head>
       )}
 
-      {/* HERO BANNER (sama seperti sebelumnya) */}
-      {/* <div className="relative w-full overflow-hidden" style={{ height: '38vh', minHeight: 220 }}>
-        {anime?.images?.webp?.large_image_url && (
-          <>
-            <img
-              src={anime.images.webp.large_image_url}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-sm opacity-20 pointer-events-none"
-            />
-            <div className="absolute inset-0 pointer-events-none"
-              style={{ background: 'linear-gradient(to top, #0B0E14 0%, rgba(11,14,20,0.7) 60%, transparent)' }} />
-          </>
-        )}
-        <div className="relative h-full max-w-7xl mx-auto px-4 md:px-8 flex items-end pb-8">
-          {animeLoading ? (
-            <Loader className="mx-auto" />
-          ) : anime && (
-            <div className="flex items-end gap-5">
-              <img
-                src={anime.images?.webp?.large_image_url}
-                alt={anime.title}
-                className="hidden md:block w-28 rounded-xl border shadow-2xl"
-                style={{ borderColor: 'rgba(245,158,11,0.2)', aspectRatio: '2/3', objectFit: 'cover' }}
-              />
-              <div>
-                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                  {anime.genres?.slice(0, 3).map((g) => (
-                    <Tag key={g.mal_id} amber>{g.name}</Tag>
-                  ))}
-                  <Tag>{anime.type}</Tag>
-                  {anime.status === 'Currently Airing' && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold animate-pulse"
-                      style={{ background: 'rgba(34,211,165,0.15)', color: '#22D3A5' }}>
-                      ● Airing
-                    </span>
-                  )}
-                </div>
-                <h1 className="text-2xl md:text-4xl font-bold leading-tight" style={{ color: COLORS.text }}>
-                  {anime.title}
-                </h1>
-                <p className="text-sm mt-0.5" style={{ color: COLORS.accent }}>
-                  {anime.title_japanese}
-                </p>
-                <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: COLORS.muted }}>
-                  {anime.score && (
-                    <span className="flex items-center gap-1" style={{ color: scoreColor(anime.score) }}>
-                      <FaStar size={10} /> {anime.score.toFixed(2)}
-                    </span>
-                  )}
-                  {anime.episodes && <span>{anime.episodes} eps</span>}
-                  {anime.year && <span>{anime.year}</span>}
-                  {anime.studios?.[0] && <span>{anime.studios[0].name}</span>}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div> */}
-
       {/* MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
@@ -800,7 +723,7 @@ export default function AnimePage() {
               />
             )}
 
-            {/* TABS (sama seperti sebelumnya) */}
+            {/* TABS */}
             <div>
               <div className="flex gap-0 border-b" style={{ borderColor: COLORS.border }}>
                 {[
@@ -815,7 +738,6 @@ export default function AnimePage() {
                     className="px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap bg-transparent outline-none"
                     style={{
                       color: tab === key ? COLORS.accent : COLORS.muted,
-                      // Hapus property 'border', ganti pake borderBottomWidth aja biar gak tabrakan
                       borderBottomWidth: "2px",
                       borderBottomStyle: "solid",
                       borderBottomColor: tab === key ? COLORS.accent : "transparent",
@@ -1118,7 +1040,7 @@ export default function AnimePage() {
             </div>
           </div>
 
-          {/* RIGHT SIDEBAR (sama seperti sebelumnya, disederhanakan) */}
+          {/* RIGHT SIDEBAR */}
           <div className="flex flex-col gap-4 xl:sticky xl:top-4">
             {animeLoading ? (
               <Loader />
@@ -1127,11 +1049,13 @@ export default function AnimePage() {
                 <>
                   <Card>
                     <div className="relative">
-                      <img
+                      <Image
                         src={anime.images?.webp?.large_image_url}
                         alt={anime.title}
                         className="w-full block object-cover"
                         style={{ maxHeight: 200 }}
+                        width={100}
+                        height={200}
                       />
                       <div
                         className="absolute inset-0 pointer-events-none"

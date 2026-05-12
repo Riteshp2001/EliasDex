@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import axios from "axios";
+import Image from "next/image";
 
 const DetailComic = () => {
   const router = useRouter();
@@ -19,34 +20,65 @@ const DetailComic = () => {
   };
   const processedLink = searchParams.get("processedLink") || "";
 
+  // Inisialisasi loading: hanya true jika ada processedLink yang akan di‑fetch
+  const [loading, setLoading] = useState(!!processedLink);
   const [comicDetail, setComicDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [history, setHistory] = useState(null);
+
+  // History langsung diambil dari localStorage saat mount, tanpa useEffect
+  const [history, setHistory] = useState(() => {
+    try {
+      const historyData = JSON.parse(localStorage.getItem("comicHistory"));
+      return historyData?.[slug] ?? null;
+    } catch {
+      return null;
+    }
+  });
+
   const [recommendations, setRecommendations] = useState([]);
   const [expandedSynopsis, setExpandedSynopsis] = useState(false);
-  // New states for chapter view
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState("grid");
   const [chapterSearch, setChapterSearch] = useState("");
 
   useEffect(() => {
+    // Jika tidak ada processedLink, tidak ada yang perlu dilakukan.
+    if (!processedLink) return;
+
+    let cancelled = false;
+
     const fetchComicDetail = async () => {
       try {
-        const cleanProcessedLink = processedLink?.startsWith("/") ? processedLink.substring(1) : processedLink;
-        const response = await axios.get(`https://www.sankavollerei.com/comic/comic/${cleanProcessedLink}`);
-        if (!response.data) throw new Error("Tidak ada data");
-        setComicDetail(response.data);
-        setLoading(false);
+        const cleanProcessedLink = processedLink.startsWith("/")
+          ? processedLink.substring(1)
+          : processedLink;
+        const response = await axios.get(
+          `https://www.sankavollerei.com/comic/comic/${cleanProcessedLink}`
+        );
+        if (!cancelled) {
+          setComicDetail(response.data);
+          setLoading(false);
+        }
       } catch (err) {
-        setError(err.response?.data?.message || err.message || "Terjadi kesalahan");
-        setLoading(false);
-        setComicDetail({ synopsis: "Synopsis tidak tersedia.", chapters: [], creator: "Unknown" });
+        if (!cancelled) {
+          setError(
+            err.response?.data?.message || err.message || "Terjadi kesalahan"
+          );
+          setComicDetail({
+            synopsis: "Synopsis tidak tersedia.",
+            chapters: [],
+            creator: "Unknown",
+          });
+          setLoading(false);
+        }
       }
     };
 
     const fetchRecommendations = async () => {
       try {
-        const response = await axios.get("https://www.sankavollerei.com/comic/recommendations");
+        const response = await axios.get(
+          "https://www.sankavollerei.com/comic/recommendations"
+        );
+        if (cancelled) return;
         const processed = response.data.recommendations.map((item) => {
           const recSlug = item.title
             .toLowerCase()
@@ -58,12 +90,18 @@ const DetailComic = () => {
             slug: recSlug,
             processedLink: link,
             source: item.reason || "-",
-            popularity: item.recommendation_score ? item.recommendation_score.toFixed(2) : "-",
-            image: item.image.includes("lazy.jpg") ? "https://via.placeholder.com/300x450?text=No+Cover" : item.image,
+            popularity: item.recommendation_score
+              ? item.recommendation_score.toFixed(2)
+              : "-",
+            image: item.image.includes("lazy.jpg")
+              ? "https://via.placeholder.com/300x450?text=No+Cover"
+              : item.image,
           };
         });
         const filtered = processed.filter(
-          (item) => !item.title.toLowerCase().includes("apk") && !item.chapter.toLowerCase().includes("download"),
+          (item) =>
+            !item.title.toLowerCase().includes("apk") &&
+            !item.chapter.toLowerCase().includes("download")
         );
         setRecommendations(filtered.filter((r) => r.slug !== slug).slice(0, 6));
       } catch (err) {
@@ -71,18 +109,12 @@ const DetailComic = () => {
       }
     };
 
-    if (processedLink) {
-      fetchComicDetail();
-    } else {
-      setError("Link komik tidak valid");
-      setLoading(false);
-    }
+    fetchComicDetail();
     fetchRecommendations();
 
-    try {
-      const historyData = JSON.parse(localStorage.getItem("comicHistory"));
-      if (historyData && historyData[slug]) setHistory(historyData[slug]);
-    } catch (e) {}
+    return () => {
+      cancelled = true;
+    };
   }, [processedLink, slug]);
 
   const handleReadComic = (chapterData = null) => {
@@ -90,15 +122,14 @@ const DetailComic = () => {
     if (chapterData) {
       chapterToRead = chapterData;
     } else if (comicDetail?.chapters?.length > 0) {
-      // Find chapter 1, or the chapter with the lowest number
       const chapter1 = comicDetail.chapters.find(
-        (ch) => String(ch.chapter).toLowerCase() === "1" || String(ch.chapter).toLowerCase() === "chapter 1",
+        (ch) =>
+          String(ch.chapter).toLowerCase() === "1" ||
+          String(ch.chapter).toLowerCase() === "chapter 1"
       );
-
       if (chapter1) {
         chapterToRead = chapter1;
       } else {
-        // If chapter 1 not found, sort and find the lowest chapter number
         const sortedChapters = [...comicDetail.chapters].sort((a, b) => {
           const numA = parseFloat(String(a.chapter).replace(/\D/g, "")) || Infinity;
           const numB = parseFloat(String(b.chapter).replace(/\D/g, "")) || Infinity;
@@ -110,6 +141,7 @@ const DetailComic = () => {
       alert("Tidak ada chapter tersedia");
       return;
     }
+
     const queryParams = new URLSearchParams({
       chapterLink: chapterToRead.link,
       comicTitle: comic.title,
@@ -125,7 +157,12 @@ const DetailComic = () => {
   };
 
   const handleContinueReading = () => {
-    if (history) handleReadComic({ link: history.lastChapterLink, chapter: history.lastChapter });
+    if (history) {
+      handleReadComic({
+        link: history.lastChapterLink,
+        chapter: history.lastChapter,
+      });
+    }
   };
 
   const handleRecommendationDetail = (item) => {
@@ -139,28 +176,55 @@ const DetailComic = () => {
       processedLink: item.processedLink,
     }).toString();
     router.push(`/comic/${item.slug}?${queryParams}`);
-    window.location.reload();
   };
 
   const handleGenreClick = (genreSlug) => {
     router.push(`/genre/${genreSlug}`);
   };
 
-  // Data final dengan prioritas dari API
   const displayTitle = comicDetail?.title || comic.title;
   const displayImage = comicDetail?.image || comic.image;
   const displayAltTitle = comicDetail?.title_indonesian || null;
-  const displaySynopsis = comicDetail?.synopsis_full || comicDetail?.synopsis || "Synopsis tidak tersedia.";
+  const displaySynopsis =
+    comicDetail?.synopsis_full || comicDetail?.synopsis || "Synopsis tidak tersedia.";
   const metadata = comicDetail?.metadata || {};
   const genres = comicDetail?.genres || [];
   const similarManga = comicDetail?.similar_manga || [];
   const isSynopsisLong = displaySynopsis.length > 300;
 
-  // Filter chapters based on search query
   const chapters = comicDetail?.chapters || [];
-  const filteredChapters = chapters.filter((ch) => ch.chapter.toLowerCase().includes(chapterSearch.toLowerCase()));
+  const filteredChapters = chapters.filter((ch) =>
+    ch.chapter.toLowerCase().includes(chapterSearch.toLowerCase())
+  );
 
-  /* ─── Loading ─── */
+  /* ---------- Jika processedLink kosong ---------- */
+  if (!processedLink) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-xs">
+          <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950 flex items-center justify-center mx-auto">
+            <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Link komik tidak valid</p>
+          <button
+            onClick={() => router.push("/comic")}
+            className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 underline underline-offset-4 transition-colors"
+          >
+            ← Kembali ke Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------- Loading ---------- */
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950">
@@ -185,7 +249,7 @@ const DetailComic = () => {
     );
   }
 
-  /* ─── Error ─── */
+  /* ---------- Error ---------- */
   if (error && !comicDetail?.chapters) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-4">
@@ -212,6 +276,7 @@ const DetailComic = () => {
     );
   }
 
+  /* ---------- Tidak ada judul ---------- */
   if (!displayTitle) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-4">
@@ -230,15 +295,17 @@ const DetailComic = () => {
 
   const isLatestChapter = history?.lastChapter === comic.chapter;
 
+  /* ---------- Tampilan Utama ---------- */
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
       {/* HERO BANNER */}
       <div className="relative h-56 sm:h-64 md:h-42 overflow-hidden">
-        <img
+        <Image
           src={displayImage}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover scale-110"
+          fill
+          className="absolute inset-0 object-cover scale-110"
           style={{ filter: "blur(28px) saturate(1.3)", transform: "scale(1.15)" }}
         />
         <div className="absolute inset-0 bg-neutral-900/60 dark:bg-neutral-950/70" />
@@ -265,15 +332,17 @@ const DetailComic = () => {
         {/* COVER + META */}
         <div className="flex flex-col sm:flex-row gap-5 sm:gap-7 -mt-20 sm:-mt-24 relative z-10">
           <div className="w-28 sm:w-36 flex-shrink-0 mx-auto sm:mx-0">
-            <div className="aspect-[2/3] overflow-hidden shadow-2xl shadow-neutral-900/40 ring-1 ring-white/10 rounded-sm">
-              <img
+            <div className="aspect-[2/3] overflow-hidden shadow-2xl shadow-neutral-900/40 ring-1 ring-white/10 rounded-sm relative">
+              <Image
                 src={displayImage}
                 alt={displayTitle}
-                width="160"
-                height="240"
-                loading="eager"
-                className="w-full h-full object-cover"
-                onError={(e) => (e.target.src = "https://via.placeholder.com/300x450?text=No+Cover")}
+                fill
+                sizes="(max-width: 640px) 112px, 144px"
+                className="object-cover"
+                priority
+                onError={(e) => {
+                  e.currentTarget.src = "https://via.placeholder.com/300x450?text=No+Cover";
+                }}
               />
             </div>
           </div>
@@ -372,7 +441,9 @@ const DetailComic = () => {
                 Sinopsis
               </h2>
               <div className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed whitespace-pre-line">
-                {expandedSynopsis ? displaySynopsis : `${displaySynopsis.slice(0, 300)}${isSynopsisLong ? "..." : ""}`}
+                {expandedSynopsis
+                  ? displaySynopsis
+                  : `${displaySynopsis.slice(0, 300)}${isSynopsisLong ? "..." : ""}`}
                 {isSynopsisLong && (
                   <button
                     onClick={() => setExpandedSynopsis(!expandedSynopsis)}
@@ -490,7 +561,6 @@ const DetailComic = () => {
                   Daftar Chapter
                 </h2>
                 <div className="flex items-center gap-2">
-                  {/* Search input */}
                   <div className="relative">
                     <input
                       type="text"
@@ -508,7 +578,6 @@ const DetailComic = () => {
                       </button>
                     )}
                   </div>
-                  {/* Toggle buttons */}
                   <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-full p-0.5">
                     <button
                       onClick={() => setViewMode("grid")}
@@ -635,18 +704,18 @@ const DetailComic = () => {
                             processedLink: similarProcessed,
                           }).toString();
                           router.push(`/comic/${similarSlug}?${params}`);
-                          window.location.reload();
                         }}
                       >
-                        <div className="w-12 h-16 flex-shrink-0 overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700">
-                          <img
+                        <div className="w-12 h-16 flex-shrink-0 overflow-hidden rounded-md bg-neutral-200 dark:bg-neutral-700 relative">
+                          <Image
                             src={item.image}
                             alt={item.title}
-                            width="48"
-                            height="64"
-                            loading="lazy"
-                            className="w-full h-full object-cover group-hover:scale-105 transition"
-                            onError={(e) => (e.target.src = "https://via.placeholder.com/300x450?text=No+Cover")}
+                            fill
+                            sizes="48px"
+                            className="object-cover group-hover:scale-105 transition"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://via.placeholder.com/300x450?text=No+Cover";
+                            }}
                           />
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -677,15 +746,16 @@ const DetailComic = () => {
                       className="group flex gap-3 cursor-pointer"
                       onClick={() => handleRecommendationDetail(item)}
                     >
-                      <div className="w-12 h-16 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800">
-                        <img
+                      <div className="w-12 h-16 flex-shrink-0 overflow-hidden rounded-md bg-neutral-100 dark:bg-neutral-800 relative">
+                        <Image
                           src={item.image}
                           alt={item.title}
-                          width="48"
-                          height="64"
-                          loading="lazy"
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
-                          onError={(e) => (e.target.src = "https://via.placeholder.com/300x450?text=No+Cover")}
+                          fill
+                          sizes="48px"
+                          className="object-cover group-hover:scale-105 transition"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://via.placeholder.com/300x450?text=No+Cover";
+                          }}
                         />
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-center">

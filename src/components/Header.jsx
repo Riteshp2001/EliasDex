@@ -10,10 +10,10 @@ import useSidebarStore from "../store/sidebarStore";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV_LINKS = [
-  { label: "Most Popular", href: "/explore/bypopularity", icon: <FaFire size={13} /> },
-  { label: "Top Favorites", href: "/explore/favorite", icon: <FaStar size={13} /> },
-  { label: "New Releases", href: "/explore/airing", icon: <MdNewReleases size={14} /> },
-  { label: "Upcoming", href: "/explore/upcoming", icon: <FaCalendarAlt size={13} /> },
+  { label: "Most Popular", href: "/search?order_by=popularity&sfw=false", icon: <FaFire size={13} /> },
+  { label: "Top Favorites", href: "/search?order_by=favorites&sfw=false", icon: <FaStar size={13} /> },
+  { label: "New Releases", href: "/search?status=airing&order_by=start_date&sfw=false", icon: <MdNewReleases size={14} /> },
+  { label: "Upcoming", href: "/search?status=upcoming&order_by=start_date&sfw=false", icon: <FaCalendarAlt size={13} /> },
 ];
 
 const MOCK_NOTIFICATIONS = [
