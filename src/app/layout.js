@@ -14,16 +14,16 @@ const baseUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
 export const metadata = {
   metadataBase: new URL(baseUrl),
-  title: "EliasDex | Watch Free Anime, Online Anime Streaming - eliasdex",
+  title: "EliasDex | Watch Free Anime, Online Anime Streaming",
   description:
-    "eliasdex is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD eliasdex, Anix, 9anime, Zoro, Animixplay.",
+    "eliasdex is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD, anime Indonesia, anime sub Indo, dan baca komik gratis. Akses cepat untuk anime gratis, manga, dan komunitas. Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael.",
   keywords:
-    "eliasdex, eliasdex to, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch",
+    "eliasdex, eliasdex to, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch, anime indonesia, anime sub indo, streaming anime gratis, manga online gratis, baca komik, Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael",
   robots: "index, follow",
   openGraph: {
-    title: "EliasDex | Watch Free Anime, Online Anime Streaming - eliasdex",
+    title: "EliasDex | Watch Free Anime, Online Anime Streaming",
     description:
-      "eliasdex to is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD.",
+      "eliasdex to is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD. Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael.",
     images: ["/images/preview.jpg"],
     type: "website",
   },
