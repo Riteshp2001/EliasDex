@@ -9,10 +9,32 @@ const snap = new midtransClient.Snap({
 
 // Determine donor tier based on amount
 function getDonorTier(amount) {
-  if (amount >= 500000) return "platinum";
-  if (amount >= 250000) return "gold";
-  if (amount >= 100000) return "silver";
-  return "bronze";
+  // Tier super tinggi (Ultimate)
+  if (amount >= 100000000) return "celestial";
+  if (amount >= 50000000)  return "legendary";
+  if (amount >= 25000000)  return "mythic";
+  
+  // Tier high-end
+  if (amount >= 10000000)  return "immortal";
+  if (amount >= 5000000)   return "titanium";
+  if (amount >= 2500000)   return "diamond";
+  if (amount >= 1000000)   return "platinum";
+  
+  // Tier menengah atas
+  if (amount >= 750000)     return "gold-plus";
+  if (amount >= 500000)     return "gold";
+  if (amount >= 350000)     return "silver-plus";
+  if (amount >= 250000)     return "silver";
+  
+  // Tier menengah bawah
+  if (amount >= 150000)     return "bronze-plus";
+  if (amount >= 100000)     return "bronze";
+  if (amount >= 75000)      return "iron";
+  if (amount >= 50000)      return "copper";
+  if (amount >= 25000)      return "tin";
+  
+  // Tier dasar
+  return "supporter";
 }
 
 export async function POST(req) {
