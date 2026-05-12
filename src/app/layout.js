@@ -19,8 +19,11 @@ export const metadata = {
   description:
     "eliasdex is a free no ads anime site to watch free anime. Online anime streaming at eliasdex with DUB, SUB in HD, anime Indonesia, anime sub Indo, dan baca komik gratis. Akses cepat untuk anime gratis, manga, dan komunitas. Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael.",
   keywords:
-    "eliasdex, eliasdex to, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch, anime indonesia, anime sub indo, streaming anime gratis, manga online gratis, baca komik, Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael",
+    "eliasdex, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch, anime indonesia, anime sub indo, streaming anime gratis, manga online gratis, baca komik, Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael",
   robots: "index, follow",
+  verification: {
+    google: "HoZgwYJz6Z5gjLcl6I91BN6MIOZDP9jMApEHGsJidqM",
+  },
   openGraph: {
     title: "EliasDex | Watch Free Anime, Online Anime Streaming",
     description:
