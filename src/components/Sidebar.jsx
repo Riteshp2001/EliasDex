@@ -19,16 +19,17 @@ const Sidebar = () => {
 
   const list = [
     { name: "Home", link: "/home" },
-    { name: "Most Popular", link: "/explore/bypopularity" },
-    { name: "Top Airing", link: "/explore/airing" },
-    { name: "Most Favorite", link: "/explore/favorite" },
+    { name: "Most Popular", link: "/search?order_by=popularity" },
+    { name: "Top Airing", link: "/search?status=airing&order_by=start_date" },
+    { name: "Most Favorite", link: "/search?order_by=favorites" },
     { name: "Home Comic", link: "/comic" },
     { name: "Leaderboard", link: "/leaderboard" },
+    { name: "Support", link: "/donate" },
   ];
 
   return (
     <div
-      className={`sidebar transition-all fixed overflow-scroll h-full z-[100] inset-0 w-64 md:w-80  bg-[rgba(255,255,255,.1);] ${
+      className={`sidebar transition-all fixed overflow-scroll h-full z-[200] inset-0 w-64 md:w-80  bg-[rgba(255, 255, 255, 0.23);] ${
         isSidebarOpen ? "translate-x-0" : "translate-x-[-100%]"
       }`}
     >

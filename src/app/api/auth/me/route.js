@@ -32,6 +32,8 @@ export async function GET(req) {
         name: user.name,
         profileImage: user.profileImage,
         watchHistory: user.watchHistory ?? [],
+        isDonator: user.isDonator ?? false,
+        donorTier: user.donorTier ?? null,
       },
     });
   } catch (error) {

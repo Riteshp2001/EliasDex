@@ -542,7 +542,7 @@ const Home = () => {
                   genres.map((g) => (
                     <Link
                       key={`genre-${copy}-${g.mal_id}`}
-                      href={`/genre?genre=${g.mal_id}`}
+                      href={`/search?order_by=end_date&sfw=false&genres=${g.mal_id}`}
                       className="shrink-0 bg-white/[0.06] hover:bg-violet-700/60 border border-white/[0.08] hover:border-violet-500/40 text-white/60 hover:text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs transition-all duration-200"
                     >
                       {g.name}

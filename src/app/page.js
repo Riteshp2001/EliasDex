@@ -399,7 +399,7 @@ export default function RootPage() {
               </h2>
               <p className="ed-section__sub--sm">Curated picks loved by our community this season</p>
             </div>
-            <Link href="/recommendations/anime" className="ed-link-more">
+            <Link href="/search?order_by=score&sfw=false&page=1" className="ed-link-more">
               View All <FaChevronRight className="ml-1 text-xs" />
             </Link>
           </div>

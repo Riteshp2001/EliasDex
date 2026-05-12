@@ -6,23 +6,248 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import Loader from "@/components/Loader";
 import Image from "next/image";
+import Footer from "@/components/Footer";
+
+// ======================== TIER STYLES LENGKAP (18 TIER) ========================
+const TIER_STYLES = {
+  celestial: {
+    label: "Celestial",
+    icon: "🌌",
+    accent: "#E0B0FF",
+    accentGlow: "rgba(224,176,255,0.7)",
+    nameGrad: "linear-gradient(135deg, #E0B0FF, #A855F7, #C084FC, #E0B0FF)",
+    badgeBg: "linear-gradient(135deg, #1A0B2E, #2D1B4E)",
+    badgeBorder: "#E0B0FF",
+    avatarBorder: "linear-gradient(135deg, #E0B0FF, #A855F7, #C084FC)",
+    glowEffect: "0 0 20px rgba(224,176,255,0.6)",
+    css: "celestial",
+    levelColor: "#E0B0FF",
+  },
+  legendary: {
+    label: "Legendary",
+    icon: "🏆",
+    accent: "#FFD966",
+    accentGlow: "rgba(255,217,102,0.6)",
+    nameGrad: "linear-gradient(135deg, #FFD966, #FFB347, #FFD966)",
+    badgeBg: "linear-gradient(135deg, #2E1A00, #4A2E00)",
+    badgeBorder: "#FFD966",
+    avatarBorder: "linear-gradient(135deg, #FFD966, #FFB347)",
+    glowEffect: "0 0 18px rgba(255,217,102,0.5)",
+    css: "legendary",
+    levelColor: "#FFD966",
+  },
+  mythic: {
+    label: "Mythic",
+    icon: "⚡",
+    accent: "#C77DFF",
+    accentGlow: "rgba(199,125,255,0.55)",
+    nameGrad: "linear-gradient(135deg, #C77DFF, #9B5DE5, #C77DFF)",
+    badgeBg: "linear-gradient(135deg, #1E102E, #321B4E)",
+    badgeBorder: "#C77DFF",
+    avatarBorder: "linear-gradient(135deg, #C77DFF, #9B5DE5)",
+    glowEffect: "0 0 18px rgba(199,125,255,0.5)",
+    css: "mythic",
+    levelColor: "#C77DFF",
+  },
+  immortal: {
+    label: "Immortal",
+    icon: "♾️",
+    accent: "#64FFDA",
+    accentGlow: "rgba(100,255,218,0.5)",
+    nameGrad: "linear-gradient(135deg, #64FFDA, #00B4D8, #64FFDA)",
+    badgeBg: "linear-gradient(135deg, #0A2A2A, #104F4F)",
+    badgeBorder: "#64FFDA",
+    avatarBorder: "linear-gradient(135deg, #64FFDA, #00B4D8)",
+    glowEffect: "0 0 15px rgba(100,255,218,0.4)",
+    css: "immortal",
+    levelColor: "#64FFDA",
+  },
+  titanium: {
+    label: "Titanium",
+    icon: "⚙️",
+    accent: "#B0BEC5",
+    accentGlow: "rgba(176,190,197,0.45)",
+    nameGrad: "linear-gradient(135deg, #B0BEC5, #90A4AE, #B0BEC5)",
+    badgeBg: "linear-gradient(135deg, #1C252B, #2C3A42)",
+    badgeBorder: "#B0BEC5",
+    avatarBorder: "linear-gradient(135deg, #B0BEC5, #90A4AE)",
+    glowEffect: "0 0 12px rgba(176,190,197,0.3)",
+    css: "titanium",
+    levelColor: "#B0BEC5",
+  },
+  diamond: {
+    label: "Diamond",
+    icon: "💎",
+    accent: "#7DF9FF",
+    accentGlow: "rgba(125,249,255,0.5)",
+    nameGrad: "linear-gradient(135deg, #7DF9FF, #00E5FF, #7DF9FF)",
+    badgeBg: "linear-gradient(135deg, #0A2E38, #104A58)",
+    badgeBorder: "#7DF9FF",
+    avatarBorder: "linear-gradient(135deg, #7DF9FF, #00E5FF)",
+    glowEffect: "0 0 15px rgba(125,249,255,0.4)",
+    css: "diamond",
+    levelColor: "#7DF9FF",
+  },
+  platinum: {
+    label: "Platinum",
+    icon: "✦",
+    accent: "#A78BFA",
+    accentGlow: "rgba(167,139,250,0.38)",
+    nameGrad: "linear-gradient(135deg, #A78BFA, #60A5FA, #C084FC)",
+    badgeBg: "linear-gradient(135deg, #0D0820, #160D30)",
+    badgeBorder: "#A78BFA",
+    avatarBorder: "linear-gradient(135deg, #A78BFA, #60A5FA)",
+    glowEffect: "0 0 12px rgba(167,139,250,0.4)",
+    css: "platinum",
+    levelColor: "#A78BFA",
+  },
+  "gold-plus": {
+    label: "Gold+",
+    icon: "⭐",
+    accent: "#F7D44A",
+    accentGlow: "rgba(247,212,74,0.35)",
+    nameGrad: "linear-gradient(135deg, #F7D44A, #FFE484, #F7D44A)",
+    badgeBg: "linear-gradient(135deg, #1C1600, #2E2600)",
+    badgeBorder: "#F7D44A",
+    avatarBorder: "linear-gradient(135deg, #F7D44A, #FFE484)",
+    glowEffect: "0 0 10px rgba(247,212,74,0.4)",
+    css: "gold-plus",
+    levelColor: "#F7D44A",
+  },
+  gold: {
+    label: "Gold",
+    icon: "★",
+    accent: "#F7CC45",
+    accentGlow: "rgba(247,204,69,0.3)",
+    nameGrad: "linear-gradient(135deg, #F7CC45, #FFF0A0, #F7CC45)",
+    badgeBg: "linear-gradient(135deg, #1C1200, #2E1F00)",
+    badgeBorder: "#F7CC45",
+    avatarBorder: "linear-gradient(135deg, #F7CC45, #FFF0A0)",
+    glowEffect: "0 0 8px rgba(247,204,69,0.4)",
+    css: "gold",
+    levelColor: "#F7CC45",
+  },
+  "silver-plus": {
+    label: "Silver+",
+    icon: "✨",
+    accent: "#D0E0F0",
+    accentGlow: "rgba(208,224,240,0.3)",
+    nameGrad: "linear-gradient(135deg, #D0E0F0, #FFFFFF, #D0E0F0)",
+    badgeBg: "linear-gradient(135deg, #0F1A24, #1F2E3C)",
+    badgeBorder: "#D0E0F0",
+    avatarBorder: "linear-gradient(135deg, #D0E0F0, #FFFFFF)",
+    glowEffect: "0 0 8px rgba(208,224,240,0.3)",
+    css: "silver-plus",
+    levelColor: "#D0E0F0",
+  },
+  silver: {
+    label: "Silver",
+    icon: "◆",
+    accent: "#C4D0DC",
+    accentGlow: "rgba(196,208,220,0.25)",
+    nameGrad: "linear-gradient(135deg, #C4D0DC, #E8F0F8, #C4D0DC)",
+    badgeBg: "linear-gradient(135deg, #0F1C28, #1A2C3A)",
+    badgeBorder: "#C4D0DC",
+    avatarBorder: "linear-gradient(135deg, #C4D0DC, #E8F0F8)",
+    glowEffect: "0 0 6px rgba(196,208,220,0.3)",
+    css: "silver",
+    levelColor: "#C4D0DC",
+  },
+  "bronze-plus": {
+    label: "Bronze+",
+    icon: "🔸",
+    accent: "#E0A060",
+    accentGlow: "rgba(224,160,96,0.28)",
+    nameGrad: "linear-gradient(135deg, #E0A060, #F0C080, #E0A060)",
+    badgeBg: "linear-gradient(135deg, #2A1808, #402810)",
+    badgeBorder: "#E0A060",
+    avatarBorder: "linear-gradient(135deg, #E0A060, #F0C080)",
+    glowEffect: "0 0 6px rgba(224,160,96,0.3)",
+    css: "bronze-plus",
+    levelColor: "#E0A060",
+  },
+  bronze: {
+    label: "Bronze",
+    icon: "◈",
+    accent: "#CD7F32",
+    accentGlow: "rgba(205,127,50,0.25)",
+    nameGrad: "linear-gradient(135deg, #CD7F32, #E89F60, #CD7F32)",
+    badgeBg: "linear-gradient(135deg, #1F1206, #301E0E)",
+    badgeBorder: "#CD7F32",
+    avatarBorder: "linear-gradient(135deg, #CD7F32, #E89F60)",
+    glowEffect: "0 0 5px rgba(205,127,50,0.3)",
+    css: "bronze",
+    levelColor: "#CD7F32",
+  },
+  iron: {
+    label: "Iron",
+    icon: "⚙️",
+    accent: "#A8B0B8",
+    accentGlow: "rgba(168,176,184,0.2)",
+    nameGrad: "linear-gradient(135deg, #A8B0B8, #C0C8D0, #A8B0B8)",
+    badgeBg: "linear-gradient(135deg, #181E24, #2A3038)",
+    badgeBorder: "#A8B0B8",
+    avatarBorder: "linear-gradient(135deg, #A8B0B8, #C0C8D0)",
+    glowEffect: "0 0 4px rgba(168,176,184,0.2)",
+    css: "iron",
+    levelColor: "#A8B0B8",
+  },
+  copper: {
+    label: "Copper",
+    icon: "🔶",
+    accent: "#D98A6C",
+    accentGlow: "rgba(217,138,108,0.2)",
+    nameGrad: "linear-gradient(135deg, #D98A6C, #E8A888, #D98A6C)",
+    badgeBg: "linear-gradient(135deg, #2A1610, #402218)",
+    badgeBorder: "#D98A6C",
+    avatarBorder: "linear-gradient(135deg, #D98A6C, #E8A888)",
+    glowEffect: "0 0 4px rgba(217,138,108,0.2)",
+    css: "copper",
+    levelColor: "#D98A6C",
+  },
+  tin: {
+    label: "Tin",
+    icon: "🔘",
+    accent: "#9EA4AC",
+    accentGlow: "rgba(158,164,172,0.18)",
+    nameGrad: "linear-gradient(135deg, #9EA4AC, #B8C0C8, #9EA4AC)",
+    badgeBg: "linear-gradient(135deg, #181E24, #262E36)",
+    badgeBorder: "#9EA4AC",
+    avatarBorder: "linear-gradient(135deg, #9EA4AC, #B8C0C8)",
+    glowEffect: "0 0 3px rgba(158,164,172,0.2)",
+    css: "tin",
+    levelColor: "#9EA4AC",
+  },
+  supporter: {
+    label: "Supporter",
+    icon: "❤️",
+    accent: "#5C6C7C",
+    accentGlow: "rgba(92,108,124,0.15)",
+    nameGrad: "linear-gradient(135deg, #5C6C7C, #8A9AAC, #5C6C7C)",
+    badgeBg: "linear-gradient(135deg, #101418, #1C242C)",
+    badgeBorder: "#5C6C7C",
+    avatarBorder: "linear-gradient(135deg, #5C6C7C, #8A9AAC)",
+    glowEffect: "0 0 3px rgba(92,108,124,0.15)",
+    css: "supporter",
+    levelColor: "#5C6C7C",
+  },
+};
+
+const getTierStyle = (tierKey) => TIER_STYLES[tierKey] || null;
 
 export default function UserPage() {
   const router = useRouter();
   const { user, loading, isAuthenticated, userStats } = useAuth();
   const [history, setHistory] = useState([]);
   const [comicHistory, setComicHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(true); // mulai dengan true
+  const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      router.push("/login");
-    }
+    if (!loading && !isAuthenticated) router.push("/login");
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    // loadingHistory sudah true, langsung fetch
     fetch("/api/user/history")
       .then((res) => res.json())
       .then((data) => setHistory(data.history ?? []))
@@ -53,6 +278,9 @@ export default function UserPage() {
     levelProgress: userStats.levelProgress || 0,
   };
 
+  const tierStyle = getTierStyle(displayUser.donorTier);
+  const isDonator = displayUser.isDonator && tierStyle !== null;
+
   const stats = {
     totalJudul: history.length,
     totalEpisode: history.reduce((sum, item) => sum + (item.currentEp || 0), 0),
@@ -81,12 +309,22 @@ export default function UserPage() {
           padding: 3rem 2rem;
         }
 
-        /* ── HEADER ── */
+        /* Profile Header */
         .profile-header {
           display: flex;
           align-items: center;
           gap: 2rem;
           margin-bottom: 3rem;
+        }
+
+        .avatar-wrapper {
+          position: relative;
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .avatar {
@@ -103,81 +341,18 @@ export default function UserPage() {
           overflow: hidden;
           border: 2px solid #27272a;
           position: relative;
+          transition: all 0.3s ease;
         }
 
         .avatar.donator {
           border: 3px solid transparent;
-          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
-                      linear-gradient(135deg, #f59e0b, #fbbf24) border-box;
-          animation: donorPulse 2s ease-in-out infinite;
+          background-clip: padding-box;
+          animation: avatarGlow 2s ease-in-out infinite alternate;
         }
 
-        .avatar.donator.bronze {
-          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
-                      linear-gradient(135deg, #d97706, #ea580c) border-box;
-        }
-
-        .avatar.donator.silver {
-          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
-                      linear-gradient(135deg, #a1a1a1, #d4d4d8) border-box;
-        }
-
-        .avatar.donator.gold {
-          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
-                      linear-gradient(135deg, #f59e0b, #fbbf24) border-box;
-        }
-
-        .avatar.donator.platinum {
-          background: linear-gradient(#1a1a1a, #1a1a1a) padding-box,
-                      linear-gradient(135deg, #818cf8, #c084fc) border-box;
-        }
-
-        @keyframes donorPulse {
-          0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-          70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-        }
-
-        .donor-badge {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: 2px solid #0a0a0a;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          font-weight: bold;
-          z-index: 10;
-          animation: badgeFloat 3s ease-in-out infinite;
-        }
-
-        .donor-badge.bronze {
-          background: linear-gradient(135deg, #d97706, #ea580c);
-          color: white;
-        }
-
-        .donor-badge.silver {
-          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
-          color: #1a1a1a;
-        }
-
-        .donor-badge.gold {
-          background: linear-gradient(135deg, #f59e0b, #fbbf24);
-          color: #1a1a1a;
-        }
-
-        .donor-badge.platinum {
-          background: linear-gradient(135deg, #818cf8, #c084fc);
-          color: white;
-        }
-
-        @keyframes badgeFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-3px); }
+        @keyframes avatarGlow {
+          0% { filter: drop-shadow(0 0 3px var(--tier-accent)); }
+          100% { filter: drop-shadow(0 0 12px var(--tier-accent)); }
         }
 
         .avatar img {
@@ -186,104 +361,109 @@ export default function UserPage() {
           object-fit: cover;
         }
 
+        .donor-badge {
+          position: absolute;
+          bottom: -5px;
+          right: -5px;
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          border: 2px solid #0a0a0a;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: bold;
+          z-index: 10;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          transition: transform 0.2s;
+        }
+
+        .donor-badge:hover {
+          transform: scale(1.1);
+        }
+
         .user-details {
           flex: 1;
         }
 
+        .name-row {
+          display: flex;
+          align-items: baseline;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
         .display-name {
           font-size: 1.75rem;
-          font-weight: 600;
-          color: #fafafa;
+          font-weight: 700;
           letter-spacing: -0.02em;
-          margin-bottom: 0.25rem;
         }
 
         .display-name.donator {
-          background: linear-gradient(135deg, #f59e0b, #fbbf24);
+          background-size: 200% auto;
+          animation: nameShine 3s linear infinite;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
+        }
+
+        @keyframes nameShine {
+          0% { background-position: 0% center; }
+          100% { background-position: 200% center; }
+        }
+
+        .level-badge {
+          display: inline-flex;
+          align-items: center;
+          background: rgba(255,255,255,0.05);
+          backdrop-filter: blur(4px);
+          padding: 4px 10px;
+          border-radius: 40px;
+          font-size: 0.85rem;
           font-weight: 700;
-          animation: nameGlow 2s ease-in-out infinite alternate;
+          letter-spacing: 0.02em;
+          border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .display-name.donator.bronze {
-          background: linear-gradient(135deg, #d97706, #ea580c);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+        .level-badge.donator {
+          background: rgba(0,0,0,0.3);
+          border-color: var(--tier-accent);
+          color: var(--tier-accent);
+          box-shadow: 0 0 8px var(--tier-accent);
+          animation: levelPulse 1.5s ease-in-out infinite alternate;
         }
 
-        .display-name.donator.silver {
-          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .display-name.donator.gold {
-          background: linear-gradient(135deg, #f59e0b, #fbbf24);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        .display-name.donator.platinum {
-          background: linear-gradient(135deg, #818cf8, #c084fc);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        @keyframes nameGlow {
-          0% { filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.3)); }
-          100% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)); }
+        @keyframes levelPulse {
+          0% { box-shadow: 0 0 2px var(--tier-accent); }
+          100% { box-shadow: 0 0 12px var(--tier-accent); }
         }
 
         .username {
           font-size: 0.875rem;
           color: #71717a;
-          letter-spacing: 0.025em;
-        }
-
-        .donor-status {
-          margin-top: 0.5rem;
+          margin-top: 4px;
         }
 
         .donor-tier-badge {
-          display: inline-block;
-          padding: 0.25rem 0.75rem;
-          border-radius: 1rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 0.5rem;
+          padding: 0.25rem 0.9rem;
+          border-radius: 2rem;
           font-size: 0.75rem;
-          font-weight: 600;
+          font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          animation: badgeShine 3s ease-in-out infinite;
+          border: 1px solid;
+          transition: all 0.2s;
+          backdrop-filter: blur(4px);
         }
 
-        .donor-tier-badge.bronze {
-          background: linear-gradient(135deg, #d97706, #ea580c);
-          color: white;
-        }
-
-        .donor-tier-badge.silver {
-          background: linear-gradient(135deg, #a1a1a1, #d4d4d8);
-          color: #1a1a1a;
-        }
-
-        .donor-tier-badge.gold {
-          background: linear-gradient(135deg, #f59e0b, #fbbf24);
-          color: #1a1a1a;
-        }
-
-        .donor-tier-badge.platinum {
-          background: linear-gradient(135deg, #818cf8, #c084fc);
-          color: white;
-        }
-
-        @keyframes badgeShine {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
+        .donor-tier-badge:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.1);
         }
 
         .edit-profile-btn {
@@ -307,7 +487,7 @@ export default function UserPage() {
           background: rgba(255,255,255,0.05);
         }
 
-        /* ── STATS CARD ── */
+        /* Stats Grid */
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(6, 1fr);
@@ -335,7 +515,7 @@ export default function UserPage() {
         }
 
         .stat-number.accent {
-          color: #a78bfa; /* subtle accent instead of amber */
+          color: #a78bfa;
         }
 
         .stat-label {
@@ -346,18 +526,13 @@ export default function UserPage() {
         }
 
         @media (max-width: 768px) {
-          .stats-grid {
-            grid-template-columns: repeat(3, 1fr);
-          }
+          .stats-grid { grid-template-columns: repeat(3, 1fr); }
         }
-
         @media (max-width: 480px) {
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* ── MAIN GRID LAYOUT ── */
+        /* Main Layout */
         .main-layout {
           display: grid;
           grid-template-columns: 1fr 280px;
@@ -366,12 +541,10 @@ export default function UserPage() {
         }
 
         @media (max-width: 900px) {
-          .main-layout {
-            grid-template-columns: 1fr;
-          }
+          .main-layout { grid-template-columns: 1fr; }
         }
 
-        /* ── HISTORY PANEL COMMON ── */
+        /* History Panels */
         .history-panel {
           margin-bottom: 2.5rem;
         }
@@ -397,14 +570,31 @@ export default function UserPage() {
           transition: opacity 0.2s;
         }
 
-        .panel-link:hover {
-          opacity: 0.8;
-        }
-
         .history-list {
           display: flex;
           flex-direction: column;
           gap: 2px;
+        }
+
+        .history-list.scrollable {
+          max-height: 420px;
+          overflow-y: auto;
+          padding-right: 4px;
+        }
+
+        .history-list.scrollable::-webkit-scrollbar {
+          width: 4px;
+        }
+        .history-list.scrollable::-webkit-scrollbar-track {
+          background: #27272a;
+          border-radius: 2px;
+        }
+        .history-list.scrollable::-webkit-scrollbar-thumb {
+          background: #52525b;
+          border-radius: 2px;
+        }
+        .history-list.scrollable::-webkit-scrollbar-thumb:hover {
+          background: #71717a;
         }
 
         .history-row {
@@ -434,7 +624,6 @@ export default function UserPage() {
           justify-content: center;
           color: #52525b;
           font-size: 0.65rem;
-          text-transform: uppercase;
         }
 
         .thumb img {
@@ -494,7 +683,32 @@ export default function UserPage() {
           font-size: 0.9rem;
         }
 
-        /* ── SIDEBAR ── */
+        .view-more {
+          margin-top: 12px;
+          text-align: center;
+          padding-top: 8px;
+          border-top: 1px solid #27272a;
+        }
+
+        .view-more-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          color: #a78bfa;
+          text-decoration: none;
+          transition: all 0.2s;
+          border-radius: 6px;
+        }
+
+        .view-more-link:hover {
+          background: rgba(167, 139, 250, 0.1);
+          color: #c4b5fd;
+        }
+
+        /* Sidebar */
         .sidebar {
           display: flex;
           flex-direction: column;
@@ -558,75 +772,74 @@ export default function UserPage() {
         .xp-caption strong {
           color: #a78bfa;
         }
-
-        .settings-link {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.75rem 0;
-          color: #a1a1aa;
-          text-decoration: none;
-          font-size: 0.875rem;
-          border-bottom: 1px solid #27272a;
-          transition: color 0.2s;
-        }
-
-        .settings-link:last-child {
-          border-bottom: none;
-        }
-
-        .settings-link:hover {
-          color: #f4f4f5;
-        }
-
-        .arrow {
-          font-size: 1rem;
-          color: #52525b;
-        }
-
-        /* ── RESPONSIVE ADJUSTMENTS ── */
-        @media (max-width: 640px) {
-          .page-container {
-            padding: 2rem 1rem;
-          }
-          .profile-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-          }
-          .edit-profile-btn {
-            width: 100%;
-            text-align: center;
-          }
-          .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
       `}</style>
 
       <div className="page-container">
-        {/* Header */}
+        {/* Header Profile */}
         <header className="profile-header">
-          <div className={`avatar ${displayUser.isDonator ? `donator ${displayUser.donorTier || "bronze"}` : ""}`}>
-            {displayUser.profileImage ? (
-              <Image src={displayUser.profileImage} alt="Profile" width={100} height={100} />
-            ) : (
-              (displayUser.name?.charAt(0)?.toUpperCase() ?? "U")
+          <div className="avatar-wrapper">
+            <div
+              className={`avatar ${isDonator ? "donator" : ""}`}
+              style={
+                isDonator
+                  ? {
+                      "--tier-accent": tierStyle.accent,
+                      backgroundImage: tierStyle.avatarBorder,
+                      backgroundClip: "padding-box",
+                    }
+                  : {}
+              }
+            >
+              {displayUser.profileImage ? (
+                <Image src={displayUser.profileImage} alt="Profile" width={100} height={100} />
+              ) : (
+                <span>{displayUser.name?.charAt(0)?.toUpperCase() ?? "U"}</span>
+              )}
+            </div>
+            {isDonator && (
+              <div
+                className="donor-badge"
+                style={{
+                  background: tierStyle.badgeBg,
+                  borderColor: tierStyle.badgeBorder,
+                  color: tierStyle.accent,
+                  boxShadow: tierStyle.glowEffect,
+                }}
+              >
+                {tierStyle.icon}
+              </div>
             )}
-            {displayUser.isDonator && <div className={`donor-badge ${displayUser.donorTier || "bronze"}`}>✨</div>}
           </div>
           <div className="user-details">
-            <h1
-              className={`display-name ${displayUser.isDonator ? `donator ${displayUser.donorTier || "bronze"}` : ""}`}
-            >
-              {displayUser.name}
-            </h1>
+            <div className="name-row">
+              <h1
+                className={`display-name ${isDonator ? "donator" : ""}`}
+                style={isDonator ? { backgroundImage: tierStyle.nameGrad } : { color: "#fafafa" }}
+              >
+                {displayUser.name}
+              </h1>
+              <div
+                className={`level-badge ${isDonator ? "donator" : ""}`}
+                style={isDonator ? { "--tier-accent": tierStyle.accent, color: tierStyle.accent } : {}}
+              >
+                Lvl.{displayUser.level}
+              </div>
+            </div>
             <p className="username">@{displayUser.username}</p>
-            {displayUser.isDonator && (
+            {isDonator && (
               <div className="donor-status">
-                <span className={`donor-tier-badge ${displayUser.donorTier || "bronze"}`}>
-                  {displayUser.donorTier?.charAt(0).toUpperCase() + displayUser.donorTier?.slice(1)} Donor
-                </span>
+                <div
+                  className="donor-tier-badge"
+                  style={{
+                    background: tierStyle.badgeBg,
+                    borderColor: tierStyle.badgeBorder,
+                    color: tierStyle.accent,
+                    boxShadow: tierStyle.glowEffect,
+                  }}
+                >
+                  <span>{tierStyle.icon}</span>
+                  <span>{tierStyle.label}</span>
+                </div>
               </div>
             )}
           </div>
@@ -635,7 +848,7 @@ export default function UserPage() {
           </Link>
         </header>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <div className="stats-grid">
           <div className="stat-item">
             <span className="stat-number">{loadingHistory ? "—" : stats.totalJudul}</span>
@@ -663,15 +876,14 @@ export default function UserPage() {
           </div>
         </div>
 
-        {/* Main content area */}
+        {/* Main Content */}
         <div className="main-layout">
-          {/* Left column: histories */}
           <div>
-            {/* Anime History */}
+            {/* Anime History - last 5 with scroll */}
             <section className="history-panel">
               <div className="panel-header">
                 <h2 className="panel-title">Anime History</h2>
-                <Link href="/explore/bypopularity" className="panel-link">
+                <Link href="/search?order_by=popularity" className="panel-link">
                   Explore
                 </Link>
               </div>
@@ -682,8 +894,8 @@ export default function UserPage() {
               ) : history.length === 0 ? (
                 <p className="empty-state">No anime watched yet.</p>
               ) : (
-                <div className="history-list">
-                  {history.map((item, idx) => (
+                <div className="history-list scrollable">
+                  {history.map((item) => (
                     <Link
                       key={`${item.animeId}-${item.currentEp}`}
                       href={`/anime/${item.animeId}`}
@@ -699,26 +911,26 @@ export default function UserPage() {
                           <div className="progress-fill" style={{ width: `${item.percent ?? 0}%` }} />
                         </div>
                       </div>
-                      <span className="percentage">{item.percent ?? 0}%</span>
+                      <span className="percentage">{Math.max(0, Math.min(item.percent ?? 0, 100))}%</span>
                     </Link>
                   ))}
                 </div>
               )}
             </section>
 
-            {/* Comic History */}
+            {/* Comic History - last 5 with scroll */}
             <section className="history-panel">
               <div className="panel-header">
                 <h2 className="panel-title">Comic History</h2>
-                <Link href="/explore" className="panel-link">
+                <Link href="/comic" className="panel-link">
                   Explore
                 </Link>
               </div>
               {comicHistory.length === 0 ? (
                 <p className="empty-state">No comics read yet.</p>
               ) : (
-                <div className="history-list">
-                  {comicHistory.map((item, idx) => (
+                <div className="history-list scrollable">
+                  {comicHistory.map((item) => (
                     <Link
                       key={`${item.comicId}-${item.currentChapter}`}
                       href={`/comic/${item.comicId}`}
@@ -742,21 +954,8 @@ export default function UserPage() {
             </section>
           </div>
 
-          {/* Right sidebar */}
+          {/* Sidebar */}
           <aside className="sidebar">
-            <div className="widget">
-              <div className="widget-label">Account</div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-semibold text-neutral-300">
-                  {displayUser.name?.charAt(0)?.toUpperCase() ?? "U"}
-                </div>
-                <div>
-                  <div className="text-xs text-neutral-500 uppercase tracking-wider">Email</div>
-                  <div className="email-display">{displayUser.email}</div>
-                </div>
-              </div>
-            </div>
-
             <div className="widget">
               <div className="widget-label">Level & XP</div>
               <div className="flex items-baseline justify-between">
@@ -779,6 +978,7 @@ export default function UserPage() {
           </aside>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

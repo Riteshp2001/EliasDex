@@ -23,6 +23,8 @@ export async function GET(req, { params }) {
           profileImage: 1,
           totalXp: 1,
           watchProgress: 1,
+          isDonator: 1,
+          donorTier: 1,
         },
       },
     );
@@ -70,6 +72,8 @@ export async function GET(req, { params }) {
         totalXp,
         watchHistory,
         comicHistory,
+        isDonator: user.isDonator ?? false,
+        donorTier: user.donorTier ?? null,
       },
     });
   } catch (error) {

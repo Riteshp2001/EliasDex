@@ -1,51 +1,84 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useReducer } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import axios from "axios";
 import Image from "next/image";
+import Loader from "@/components/Loader";
+
+// Reducer for fetch-related state
+const initialState = {
+  pages: [],
+  loading: true,
+  error: null,
+  navigation: { prev: null, next: null },
+  chapterTitle: "",
+};
+
+function fetchReducer(state, action) {
+  switch (action.type) {
+    case "FETCH_START":
+      return { ...state, loading: true, error: null, pages: [], navigation: { prev: null, next: null } };
+    case "FETCH_SUCCESS":
+      return {
+        ...state,
+        loading: false,
+        pages: action.payload.pages,
+        navigation: action.payload.navigation,
+        chapterTitle: action.payload.chapterTitle,
+      };
+    case "FETCH_ERROR":
+      return { ...state, loading: false, error: action.payload };
+    case "RESET":
+      return { ...initialState, loading: false };
+    default:
+      return state;
+  }
+}
 
 const ReadComic = () => {
   const router = useRouter();
   const { slug } = useParams();
   const searchParams = useSearchParams();
 
-  // Ambil semua data dari query string
-  let chapterLinkRaw = searchParams.get("chapterLink") || "";
+  // Query parameters
+  const chapterLinkRaw = searchParams.get("chapterLink") || "";
   const comicTitle = searchParams.get("comicTitle") || "";
-  let chapterNumber = searchParams.get("chapterNumber") || "";
   const comicImage = searchParams.get("comicImage") || "";
   const comicSource = searchParams.get("comicSource") || "";
   const comicChapter = searchParams.get("comicChapter") || "";
   const comicLink = searchParams.get("comicLink") || "";
   const comicPopularity = searchParams.get("comicPopularity") || "";
   const processedLink = searchParams.get("processedLink") || "";
+  const chapterNumberParam = searchParams.get("chapterNumber") || "";
 
-  // Pastikan chapterLink diawali dengan '/' (format API)
-  const chapterLink = chapterLinkRaw.startsWith("/") ? chapterLinkRaw : `/${chapterLinkRaw}`;
+  const chapterSlug = chapterLinkRaw.startsWith("/") ? chapterLinkRaw.substring(1) : chapterLinkRaw;
 
-  // State
-  const [pages, setPages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Use reducer for fetch state
+  const [state, dispatch] = useReducer(fetchReducer, initialState);
+  const { pages, loading, error, navigation, chapterTitle } = state;
+
+  // Other state (not updated inside effect)
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [navigation, setNavigation] = useState({
-    previousChapter: null,
-    nextChapter: null,
-  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const comicContainerRef = useRef(null);
 
-  // Simpan history ke localStorage dan database
-  const saveHistory = async (comicData) => {
+  // Helper: parse chapter number from string
+  const parseChapterNumber = (str) => {
+    if (!str) return 0;
+    const match = String(str).match(/\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : 0;
+  };
+
+  // Save reading history
+  const saveHistory = async (chapterSlug, title, currentChapterNum, totalChapterNum) => {
     try {
-      // Save to localStorage (fallback)
       const history = JSON.parse(localStorage.getItem("comicHistory")) || {};
       history[slug] = {
-        title: comicData.comicTitle,
+        title: title,
         image: comicImage,
-        lastChapter: comicData.chapterNumber,
-        lastChapterLink: comicData.chapterLink,
+        lastChapter: String(currentChapterNum),
+        lastChapterLink: chapterSlug,
         readDate: new Date().toISOString(),
         comicDataForDetail: {
           comic: {
@@ -61,109 +94,126 @@ const ReadComic = () => {
       };
       localStorage.setItem("comicHistory", JSON.stringify(history));
 
-      // Save to database if user is logged in
       try {
-        const response = await fetch("/api/user/comic-progress", {
+        await fetch("/api/user/comic-progress", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             comicId: slug,
-            currentChapter: parseInt(comicData.chapterNumber) || 1,
-            totalChapters: parseInt(comicChapter) || 0,
-            title: comicData.comicTitle,
+            currentChapter: currentChapterNum,
+            totalChapters: totalChapterNum,
+            title: title,
             image: comicImage,
           }),
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Comic progress saved:", data.message);
-        }
-      } catch (apiError) {
-        console.warn("Failed to save comic progress to database:", apiError);
-        // Continue without failing - localStorage fallback is still working
+      } catch (e) {
+        console.warn("Gagal menyimpan ke server, fallback localStorage");
       }
     } catch (e) {
       console.error("Error saving history", e);
     }
   };
 
-  // Fetch data chapter dari API
+  // Fetch chapter data
   useEffect(() => {
-    const fetchChapterPages = async () => {
-      if (!chapterLink) {
-        setError(new Error("No chapter link provided"));
-        setLoading(false);
-        return;
-      }
+    if (!chapterSlug) {
+      dispatch({ type: "RESET" });
+      return;
+    }
 
-      setLoading(true);
-      setError(null);
-      setPages([]);
-      setNavigation({ previousChapter: null, nextChapter: null });
+    const fetchChapter = async () => {
+      dispatch({ type: "FETCH_START" });
       window.scrollTo(0, 0);
 
       try {
-        const apiUrl = `https://www.sankavollerei.com/comic/chapter${chapterLink}`;
+        const apiUrl = `https://www.sankavollerei.com/comic/komikindo/chapter/${chapterSlug}`;
         console.log("Fetching chapter:", apiUrl);
 
         const response = await axios.get(apiUrl);
-        const images = response.data.images || [];
-        const navData = response.data.navigation || {
-          previousChapter: null,
-          nextChapter: null,
-        };
+        const { data } = response.data;
 
-        setPages(images);
-        setNavigation(navData);
-        setLoading(false);
+        if (!data || !data.images) {
+          throw new Error("Data chapter tidak valid");
+        }
 
-        // Simpan history setelah berhasil
-        saveHistory({ chapterLink, comicTitle, chapterNumber });
+        // Filter out GIFs
+        const imageUrls = data.images
+          .map((img) => img.url)
+          .filter((url) => !url.toLowerCase().endsWith(".gif"));
+
+        if (imageUrls.length === 0) {
+          throw new Error("Chapter ini hanya berisi GIF, tidak ada halaman untuk ditampilkan.");
+        }
+
+        // Clean chapter title
+        const cleanTitle = data.title ? data.title.replace(/\n\s+/g, " ").trim() : "";
+        const finalTitle = cleanTitle || `Chapter ${chapterNumberParam}`;
+
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: {
+            pages: imageUrls,
+            navigation: {
+              prev: data.navigation?.prev || null,
+              next: data.navigation?.next || null,
+            },
+            chapterTitle: finalTitle,
+          },
+        });
+
+        // Calculate chapter numbers for history
+        const currentChapterNumber = parseChapterNumber(chapterNumberParam);
+        const firstChapterInfo = data.komikInfo?.chapters?.[0];
+        const totalChapters = firstChapterInfo
+          ? parseChapterNumber(firstChapterInfo.title)
+          : parseChapterNumber(comicChapter) || 0;
+
+        saveHistory(chapterSlug, comicTitle, currentChapterNumber, totalChapters);
       } catch (err) {
-        console.error("API error:", err);
-        setError(err);
-        setLoading(false);
-        // Fallback dummy images
-        setPages([
-          "https://picsum.photos/800/1200?random=1",
-          "https://picsum.photos/800/1200?random=2",
-          "https://picsum.photos/800/1200?random=3",
-          "https://picsum.photos/800/1200?random=4",
-        ]);
+        console.error("Fetch chapter error:", err);
+        dispatch({ type: "FETCH_ERROR", payload: err });
+        // Fallback dummy images (optional)
+        dispatch({
+          type: "FETCH_SUCCESS",
+          payload: {
+            pages: [
+              "https://picsum.photos/800/1200?random=1",
+              "https://picsum.photos/800/1200?random=2",
+              "https://picsum.photos/800/1200?random=3",
+            ],
+            navigation: { prev: null, next: null },
+            chapterTitle: `Chapter ${chapterNumberParam} (Error)`,
+          },
+        });
       }
     };
 
-    fetchChapterPages();
+    fetchChapter();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterLink]); // hanya bergantung pada chapterLink, agar tidak infinite loop
+  }, [chapterSlug]);
 
   // Scroll progress
   useEffect(() => {
+    const container = isFullscreen ? comicContainerRef.current : document.documentElement;
+    if (!container) return;
+
     const handleScroll = () => {
-      const container = isFullscreen ? comicContainerRef.current : document.documentElement;
-      if (!container) return;
-      const winScroll = container.scrollTop;
-      const height = container.scrollHeight - container.clientHeight;
-      const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
-      setScrollProgress(scrolled);
+      const scrollTop = container.scrollTop;
+      const scrollHeight = container.scrollHeight - container.clientHeight;
+      const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      setScrollProgress(progress);
     };
+
     const target = isFullscreen ? comicContainerRef.current : window;
-    if (target) target.addEventListener("scroll", handleScroll);
-    return () => {
-      if (target) target.removeEventListener("scroll", handleScroll);
-    };
+    target?.addEventListener("scroll", handleScroll);
+    return () => target?.removeEventListener("scroll", handleScroll);
   }, [isFullscreen]);
 
-  // Fullscreen change
+  // Fullscreen detection
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
   const toggleFullscreen = () => {
@@ -175,7 +225,7 @@ const ReadComic = () => {
   };
 
   const handleBack = () => {
-    const queryParams = new URLSearchParams({
+    const params = new URLSearchParams({
       title: comicTitle,
       image: comicImage,
       chapter: comicChapter,
@@ -184,24 +234,21 @@ const ReadComic = () => {
       popularity: comicPopularity,
       processedLink,
     }).toString();
-    router.push(`/comic/${slug}?${queryParams}`);
+    router.push(`/comic/${slug}?${params}`);
   };
 
-  // Fungsi untuk navigasi ke chapter lain
-  const navigateToChapter = (targetLink, targetChapterNumber) => {
-    if (!targetLink) return;
-    // Pastikan link dimulai dengan '/'
-    const formattedLink = targetLink.startsWith("/") ? targetLink : `/${targetLink}`;
-    // Ekstrak chapter number dari link jika tidak disediakan
-    let finalChapterNumber = targetChapterNumber;
-    if (!finalChapterNumber && formattedLink.includes("-")) {
-      finalChapterNumber = formattedLink.split("-").pop();
+  const navigateToChapter = (targetSlug, chapterNum = null) => {
+    if (!targetSlug) return;
+    let finalChapter = chapterNum;
+    if (!finalChapter) {
+      const match = targetSlug.match(/chapter[-.]?(\d+)/i);
+      finalChapter = match ? match[1] : "";
     }
 
-    const queryParams = new URLSearchParams({
-      chapterLink: formattedLink,
+    const params = new URLSearchParams({
+      chapterLink: `/${targetSlug}`,
       comicTitle,
-      chapterNumber: finalChapterNumber,
+      chapterNumber: finalChapter,
       comicImage,
       comicSource,
       comicChapter,
@@ -210,47 +257,41 @@ const ReadComic = () => {
       processedLink,
     }).toString();
 
-    router.push(`/comic/read/${slug}?${queryParams}`);
-  };
-
-  const handleNextChapter = () => {
-    if (navigation.nextChapter) {
-      const nextLink = navigation.nextChapter;
-      const nextNumber = nextLink.split("-").pop();
-      navigateToChapter(nextLink, nextNumber);
-    }
+    router.push(`/comic/read/${slug}?${params}`);
   };
 
   const handlePrevChapter = () => {
-    if (navigation.previousChapter) {
-      const prevLink = navigation.previousChapter;
-      const prevNumber = prevLink.split("-").pop();
-      navigateToChapter(prevLink, prevNumber);
+    if (navigation.prev) {
+      const prevNum = navigation.prev.match(/chapter-(\d+)/)?.[1] || "";
+      navigateToChapter(navigation.prev, prevNum);
     }
   };
 
-  const hasNext = !!navigation.nextChapter;
-  const hasPrev = !!navigation.previousChapter;
+  const handleNextChapter = () => {
+    if (navigation.next) {
+      const nextNum = navigation.next.match(/chapter-(\d+)/)?.[1] || "";
+      navigateToChapter(navigation.next, nextNum);
+    }
+  };
 
-  // Render loading
+  // Render loading state
   if (loading) {
     return (
-      <div className="relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-[#0a0a0a] dark:via-[#121212] dark:to-[#1a1a1a] min-h-screen flex flex-col justify-center items-center">
-        <div className="relative mb-4">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-b-4 border-indigo-500"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-purple-500/20"></div>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 font-semibold">Memuat Chapter...</p>
-      </div>
+      <Loader message="Memuat chapter..." />
     );
   }
 
-  // Render error
-  if (error) {
+  // Render error state (only if no pages)
+  if (error && pages.length === 0) {
     return (
-      <div className="relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-[#0a0a0a] dark:via-[#121212] dark:to-[#1a1a1a] min-h-screen flex justify-center items-center p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0a0a0a] dark:via-[#121212] dark:to-[#1a1a1a]">
         <div className="bg-red-500/10 border border-red-500/50 rounded-2xl p-8 text-center backdrop-blur-sm max-w-md">
-          <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-16 h-16 text-red-400 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -262,7 +303,7 @@ const ReadComic = () => {
           <p className="text-red-300 mb-6">{error.message}</p>
           <button
             onClick={handleBack}
-            className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-500 hover:to-purple-500 transition-all"
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition"
           >
             Kembali
           </button>
@@ -271,6 +312,7 @@ const ReadComic = () => {
     );
   }
 
+  // Main render
   return (
     <div
       ref={comicContainerRef}
@@ -278,9 +320,9 @@ const ReadComic = () => {
         isFullscreen ? "overflow-y-auto" : ""
       }`}
     >
-      {/* Top Navigation Bar */}
+      {/* Top navigation bar */}
       <div
-        className={`fixed top-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg z-50 border-b border-gray-200 dark:border-gray-800 transition-all ${
+        className={`fixed top-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg z-50 border-b border-gray-200 dark:border-gray-800 ${
           isFullscreen ? "hidden" : "block"
         }`}
       >
@@ -288,10 +330,20 @@ const ReadComic = () => {
           <div className="flex justify-between items-center h-16">
             <button
               onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors font-semibold"
+              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition font-semibold"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               <span className="hidden sm:inline">Kembali</span>
             </button>
@@ -311,7 +363,10 @@ const ReadComic = () => {
                 />
               </svg>
               <h2 className="text-sm md:text-base font-bold text-center truncate text-gray-900 dark:text-white">
-                {comicTitle} - <span className="text-indigo-600 dark:text-indigo-400">{chapterNumber}</span>
+                {comicTitle} -{" "}
+                <span className="text-indigo-600 dark:text-indigo-400">
+                  {chapterTitle || chapterNumberParam}
+                </span>
               </h2>
             </div>
 
@@ -320,7 +375,12 @@ const ReadComic = () => {
                 onClick={toggleFullscreen}
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -333,7 +393,12 @@ const ReadComic = () => {
                 onClick={() => router.push("/")}
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -353,18 +418,17 @@ const ReadComic = () => {
         </div>
       </div>
 
-      {/* Halaman komik */}
+      {/* Image list */}
       <div className={`pt-[68px] pb-24 ${isFullscreen ? "pt-0" : ""}`}>
         <div className="max-w-4xl mx-auto">
-          {pages.map((page, index) => (
+          {pages.map((url, index) => (
             <div key={index} className="relative">
               <Image
-                src={page}
+                src={url}
                 alt={`Halaman ${index + 1}`}
                 width={800}
                 height={1200}
                 loading={index < 2 ? "eager" : "lazy"}
-                decoding="async"
                 className="w-full h-auto object-contain block"
               />
             </div>
@@ -372,9 +436,9 @@ const ReadComic = () => {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar */}
+      {/* Bottom navigation */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl z-50 border-t border-gray-200 dark:border-gray-800 transition-all ${
+        className={`fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-2xl z-50 border-t border-gray-200 dark:border-gray-800 ${
           isFullscreen ? "hidden" : "block"
         }`}
       >
@@ -382,35 +446,57 @@ const ReadComic = () => {
           <div className="flex justify-between items-center py-4 gap-4">
             <button
               onClick={handlePrevChapter}
-              disabled={!hasPrev}
+              disabled={!navigation.prev}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                hasPrev
+                navigation.prev
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg hover:shadow-indigo-500/50 hover:scale-105"
                   : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed"
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
-              <span className="hidden sm:inline">Previous</span>
+              <span className="hidden sm:inline">Prev</span>
             </button>
 
             <div className="text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{chapterNumber}</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">
+                {chapterTitle || chapterNumberParam}
+              </p>
             </div>
 
             <button
               onClick={handleNextChapter}
-              disabled={!hasNext}
+              disabled={!navigation.next}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                hasNext
+                navigation.next
                   ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg hover:shadow-indigo-500/50 hover:scale-105"
                   : "bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-600 cursor-not-allowed"
               }`}
             >
               <span className="hidden sm:inline">Next</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>
