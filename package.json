@@ -15,7 +15,7 @@
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.14.0",
-    "midtrans-client": "^2.1.3",
+    "midtrans-client": "^1.4.3",
     "node-catbox": "^4.1.0",
     "hls.js": "^1.6.16",
     "next": "16.2.6",
