@@ -21,7 +21,7 @@ import Footer from '@/components/Footer';
 
 /* ─── Inline card component to fix the recommendation bug ─── */
 function MediaCard({ item, type = 'anime' }) {
-  const href = type === 'manga' ? `/manga/${item.mal_id}` : `/anime/${item.mal_id}`;
+  const href = type === 'manga' ? `/comic/${item.mal_id}` : `/anime/${item.mal_id}`;
   const imageUrl = item.images?.jpg?.image_url || item.images?.webp?.image_url || '/images/placeholder.jpg';
 
   return (
@@ -327,7 +327,7 @@ export default function RootPage() {
               <Link href="/home" className="ed-btn ed-btn--primary">
                 <FaPlay className="mr-2" /> Explore Anime
               </Link>
-              <Link href="/manga" className="ed-btn ed-btn--ghost">
+              <Link href="/comic" className="ed-btn ed-btn--ghost">
                 <FaBookOpen className="mr-2" /> Read Manga
               </Link>
             </div>
@@ -436,7 +436,7 @@ export default function RootPage() {
               </h2>
               <p className="ed-section__sub--sm">Top manga picks recommended by fans worldwide</p>
             </div>
-            <Link href="/recommendations/manga" className="ed-link-more">
+            <Link href="/comic" className="ed-link-more">
               View All <FaChevronRight className="ml-1 text-xs" />
             </Link>
           </div>
