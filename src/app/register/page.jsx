@@ -1,104 +1,233 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import Loader from "@/components/Loader";
+import dynamic from "next/dynamic";
+
+const Loader = dynamic(() => import("@/components/Loader"), { ssr: false });
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register, isAuthenticated } = useAuth();
-  const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+
+  const [form, setForm] = useState({ name: "", username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/user");
-    }
+    if (isAuthenticated) router.push("/user");
   }, [isAuthenticated, router]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setError("");
-    setIsSaving(true);
-    try {
-      await register({ email, username, name, password });
-      router.push("/user");
-    } catch (err) {
-      setError(err.message || "Unable to register");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setError("");
+      setIsSaving(true);
+      try {
+        await register(form);
+        router.push("/user");
+      } catch (err) {
+        setError(err.message || "Unable to register");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [form, register, router]
+  );
+
+  const goLogin = useCallback(() => router.push("/login"), [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b0e14] p-4">
-      <div className="w-full max-w-md rounded-3xl border border-[#1e293b] bg-[#111827]/95 p-8 shadow-2xl">
-        <h1 className="text-2xl font-bold text-white mb-2">Create Account</h1>
-        <p className="text-sm text-[#94a3b8] mb-6">Create your account to save progress and history in your profile.</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block text-sm text-[#cbd5e1]">
-            Name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="mt-2 w-full rounded-2xl border border-[#334155] bg-[#0f172a] px-4 py-3 text-white outline-none focus:border-[#f59e0b]"
-            />
-          </label>
-          <label className="block text-sm text-[#cbd5e1]">
-            Username
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="mt-2 w-full rounded-2xl border border-[#334155] bg-[#0f172a] px-4 py-3 text-white outline-none focus:border-[#f59e0b]"
-            />
-          </label>
-          <label className="block text-sm text-[#cbd5e1]">
-            Email
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              type="email"
-              required
-              className="mt-2 w-full rounded-2xl border border-[#334155] bg-[#0f172a] px-4 py-3 text-white outline-none focus:border-[#f59e0b]"
-            />
-          </label>
-          <label className="block text-sm text-[#cbd5e1]">
-            Password
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              required
-              className="mt-2 w-full rounded-2xl border border-[#334155] bg-[#0f172a] px-4 py-3 text-white outline-none focus:border-[#f59e0b]"
-            />
-          </label>
-          {error && <p className="text-sm text-[#f87171]">{error}</p>}
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="w-full rounded-2xl bg-[#f59e0b] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d97706] disabled:opacity-60"
-          >
-            {isSaving ? <Loader className="mx-auto h-5 w-5" /> : "Create account"}
-          </button>
-        </form>
-        <div className="mt-6 text-sm text-[#94a3b8]">
+    <div className="relative min-h-screen flex items-center justify-center bg-[#0a0a0a] overflow-hidden px-4">
+      {/* Cinematic background glow */}
+      <div aria-hidden className="pointer-events-none fixed inset-0" style={{ zIndex: 0 }}>
+        <div style={{
+          position: "absolute",
+          top: 0, left: 0, right: 0,
+          height: "50%",
+          background: "radial-gradient(ellipse 80% 60% at 50% -10%, rgba(220, 156, 38, 0.13) 0%, transparent 70%)",
+        }} />
+        <div style={{
+          position: "absolute",
+          bottom: 0, left: 0, right: 0,
+          height: "40%",
+          background: "radial-gradient(ellipse 60% 50% at 50% 110%, rgba(120, 69, 10, 0.1) 0%, transparent 70%)",
+        }} />
+      </div>
+
+      {/* Card */}
+      <main
+        className="relative w-full"
+        style={{ maxWidth: 420, zIndex: 1 }}
+      >
+        {/* Logo / Brand */}
+        <div className="mb-10 text-center">
+          <h1 style={{
+            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontSize: 28,
+            fontWeight: 700,
+            color: "#fff",
+            lineHeight: 1.2,
+            marginBottom: 8,
+          }}>
+            Create your account
+          </h1>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", lineHeight: 1.6 }}>
+            Save your progress and watch history across all devices.
+          </p>
+        </div>
+
+        {/* Form card */}
+        <div style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 16,
+          padding: "36px 32px",
+        }}>
+          <form onSubmit={handleSubmit} noValidate>
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Field label="Full Name" name="name" value={form.name} onChange={handleChange} autoComplete="name" />
+              <Field label="Username" name="username" value={form.username} onChange={handleChange} autoComplete="username" />
+              <Field label="Email address" name="email" type="email" value={form.email} onChange={handleChange} autoComplete="email" />
+              <Field label="Password" name="password" type="password" value={form.password} onChange={handleChange} autoComplete="new-password" />
+            </div>
+
+            {error && (
+              <div style={{
+                marginTop: 20,
+                padding: "10px 14px",
+                borderRadius: 8,
+                background: "rgba(239, 151, 68, 0.08)",
+                border: "1px solid rgba(239, 145, 68, 0.2)",
+                fontSize: 13,
+                color: "#f87171ff",
+              }}>
+                {error}
+              </div>
+            )}
+
+            {/* CTA Button — Netflix-style bold red */}
+            <button
+              type="submit"
+              disabled={isSaving}
+              style={{
+                marginTop: 28,
+                width: "100%",
+                padding: "15px 24px",
+                borderRadius: 8,
+                background: isSaving ? "#f59e0b" : "rgba(126, 60, 16, 0.8)",
+                border: "none",
+                color: "#fff",
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+                cursor: isSaving ? "not-allowed" : "pointer",
+                transition: "background 0.15s, transform 0.1s",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+              onMouseEnter={e => { if (!isSaving) e.currentTarget.style.background = "rgba(126, 60, 16, 0.8)"; }}
+              onMouseLeave={e => { if (!isSaving) e.currentTarget.style.background = "#f59e0b"; }}
+              onMouseDown={e => { if (!isSaving) e.currentTarget.style.transform = "scale(0.985)"; }}
+              onMouseUp={e => { e.currentTarget.style.transform = "scale(1)"; }}
+            >
+              {isSaving ? (
+                <>
+                  <Loader className="h-4 w-4" />
+                  <span>Creating account…</span>
+                </>
+              ) : (
+                "Get Started"
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer link */}
+        <p style={{
+          marginTop: 24,
+          textAlign: "center",
+          fontSize: 13,
+          color: "rgba(255,255,255,0.3)",
+        }}>
           Already have an account?{" "}
           <button
             type="button"
-            onClick={() => router.push("/login")}
-            className="font-semibold text-[#f59e0b] hover:text-[#fbbf24]"
+            onClick={goLogin}
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(255,255,255,0.75)",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: "pointer",
+              padding: 0,
+              textDecoration: "underline",
+              textDecorationColor: "rgba(255,255,255,0.25)",
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "#fff"; }}
+            onMouseLeave={e => { e.currentTarget.style.color = "rgba(255,255,255,0.75)"; }}
           >
             Sign in
           </button>
-        </div>
-      </div>
+        </p>
+      </main>
     </div>
+  );
+}
+
+function Field({ label, name, type = "text", value, onChange, autoComplete }) {
+  return (
+    <label style={{ display: "block" }}>
+      <span style={{
+        display: "block",
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        color: "rgba(255,255,255,0.35)",
+        marginBottom: 8,
+      }}>
+        {label}
+      </span>
+      <input
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        required
+        autoComplete={autoComplete}
+        style={{
+          width: "100%",
+          padding: "13px 16px",
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          color: "#fff",
+          fontSize: 14,
+          outline: "none",
+          transition: "border-color 0.15s, background 0.15s",
+          boxSizing: "border-box",
+        }}
+        onFocus={e => {
+          e.target.style.borderColor = "rgba(229, 97, 9, 0.6)";
+          e.target.style.background = "rgba(245,158,11,0.07)";
+        }}
+        onBlur={e => {
+          e.target.style.borderColor = "rgba(245,158,11,0.07)";
+          e.target.style.background = "rgba(245,158,11,0.07)";
+        }}
+      />
+    </label>
   );
 }
