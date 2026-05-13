@@ -440,6 +440,7 @@ const Header = () => {
           box-shadow: var(--t-glow, none);
           animation: tierPulse 2.5s ease-in-out infinite alternate;
           transition: box-shadow 0.3s;
+          will-change: box-shadow;
         }
         .hdr-tier-icon  { font-size: 13px; line-height: 1; }
         .hdr-tier-label { font-size: 11px; }
@@ -459,6 +460,7 @@ const Header = () => {
         }
         .hdr-avatar-ring.animate {
           animation: ringPulse 2s ease-in-out infinite alternate;
+          will-change: transform, box-shadow;
         }
         @keyframes ringPulse {
           0% { box-shadow: 0 0 0 0 var(--ring-glow, transparent); transform: scale(1); }
@@ -486,6 +488,7 @@ const Header = () => {
           -webkit-text-fill-color: transparent;
           font-weight: 600;
           animation: nameShine 3s linear infinite;
+          will-change: background-position;
         }
         @keyframes nameShine {
           0% { background-position: 0% center; }
@@ -576,18 +579,67 @@ const Header = () => {
         .hdr-spacer { height: 60px; }
 
         /* ── Responsive ── */
+        @media (max-width: 1100px) {
+          /* Compact nav labels on mid-range screens */
+          .hdr-nav-btn { padding: 6px 8px; font-size: 12px; }
+        }
         @media (max-width: 900px) {
           .hdr-nav { display: none; }
         }
         @media (max-width: 768px) {
           .hdr-search-wrap, .hdr-avatar-name { display: none; }
+          /* Touch targets: minimum 44×44px tap area for accessibility */
+          .hdr-menu-btn { width: 44px; height: 44px; border-radius: 10px; }
+          .hdr-icon-btn  { width: 44px; height: 44px; }
+          .hdr-avatar-btn { min-height: 44px; }
+        }
+        @media (max-width: 640px) {
           .hdr-icon-btn-mobile { display: flex; }
-          .hdr-inner { padding: 0 14px; }
-          .hdr-right { gap: 4px; }
+          .hdr-inner { padding: 0 10px; }
+          .hdr-right { gap: 2px; }
           .hdr-tier-badge { display: none; }
+          /* Remove GPU-hungry backdrop-filter on low-end mobile */
+          .hdr-bar {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(10, 10, 16, 0.93) !important;
+          }
+          .hdr-bar.scrolled {
+            background: rgba(10, 10, 16, 0.97) !important;
+          }
+          /* Skip filter:blur() on sidebar-open — triggers GPU compositing */
+          .hdr-bar.sidebar-open {
+            filter: none !important;
+            opacity: 0.5;
+          }
         }
         @media (max-width: 480px) {
           .hdr-avatar-btn { padding: 4px; border-radius: 50%; border: none; background: transparent; }
+        }
+
+        /* ── Reduce Motion — disables all animations for old/accessibility devices ── */
+        @media (prefers-reduced-motion: reduce) {
+          .hdr-tier-badge,
+          .hdr-avatar-ring.animate,
+          .hdr-avatar-name.donor {
+            animation: none !important;
+            will-change: auto !important;
+          }
+          .hdr-bar {
+            transition: background 0.01ms, opacity 0.01ms !important;
+          }
+          /* Sidebar overlay without blur */
+          .hdr-bar.sidebar-open {
+            filter: brightness(0.5) !important;
+          }
+          .hdr-mobile-search {
+            transition: none !important;
+          }
+          .hdr-menu-btn, .hdr-nav-btn, .hdr-icon-btn,
+          .hdr-search-input, .hdr-search-submit, .hdr-avatar-btn,
+          .hdr-menu-item, .hdr-notif-item {
+            transition: none !important;
+          }
         }
       `}</style>
 

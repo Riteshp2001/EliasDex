@@ -29,7 +29,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`sidebar transition-all fixed overflow-scroll h-full z-[200] inset-0 w-64 md:w-80  bg-[rgba(255, 255, 255, 0.23);] ${
+      className={`sidebar transition-all fixed overflow-scroll h-full z-[200] inset-0 w-64 md:w-80  bg-[rgba(255, 255, 255, 0.25);] ${
         isSidebarOpen ? "translate-x-0" : "translate-x-[-100%]"
       }`}
     >
@@ -38,19 +38,19 @@ const Sidebar = () => {
         onClick={sidebarHandler}
       >
         <FaAngleLeft />
-        <span>close menu</span>
+        <span>Close Menu</span>
       </button>
       <ul className="py-4">
         {list.map((item) => (
           <li
             key={item.link}
             onClick={sidebarHandler}
-            className=" py-4 pl-4 hover:text-primary  text-base md:text-lg border-b border-[rgba(255,255,255,.05)] w-full"
+            className=" py-4 pl-4 hover:text-primary  text-base md:text-lg border-b border-[rgba(255, 255, 255, 0.05)] w-full"
           >
             <Link href={item.link}>{item.name}</Link>
           </li>
         ))}
-        <li className=" py-4 pl-2 text-base md:text-lg w-full">genres</li>
+        {/* <li className=" py-4 pl-2 text-base md:text-lg w-full">genres</li> */}
         <Genres className="w-1/2 my-2 pl-2 hover:opacity-[.7]" />
       </ul>
     </div>

@@ -278,7 +278,7 @@ export default function RootPage() {
 
   return (
     <div className="ed-root">
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* ══════════════════ HERO ══════════════════ */}
       <section
@@ -891,10 +891,13 @@ export default function RootPage() {
         /* visual */
         .ed-hero__visual {
           flex: 1;
-          display: flex;
+          display: none;
           justify-content: center;
           align-items: center;
           position: relative;
+        }
+        @media (min-width: 1024px) {
+          .ed-hero__visual { display: flex; }
         }
         .ed-hero__glow-ring {
           position: absolute;
@@ -903,6 +906,7 @@ export default function RootPage() {
           border-radius: 50%;
           background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
           animation: pulse-ring 3s ease-in-out infinite;
+          will-change: transform, opacity;
         }
         .ed-hero__banner {
           width: 100%;
@@ -912,6 +916,7 @@ export default function RootPage() {
           position: relative;
           z-index: 1;
           filter: drop-shadow(0 20px 60px rgba(245,158,11,0.2));
+          will-change: transform;
         }
 
         /* stats bar */
@@ -1749,6 +1754,37 @@ export default function RootPage() {
         @keyframes pulse-ring {
           0%, 100% { transform: scale(0.95); opacity: 0.6; }
           50%       { transform: scale(1.05); opacity: 1; }
+        }
+
+        /* ══════ PERFORMANCE — will-change hints ══════ */
+        .media-card,
+        .ed-feature-card,
+        .ed-btn {
+          will-change: transform;
+        }
+
+        /* ══════ REDUCED MOTION — old/low-power devices ══════ */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+          .ed-hero__banner,
+          .ed-hero__glow-ring {
+            animation: none !important;
+            will-change: auto;
+          }
+          .media-card:hover,
+          .ed-feature-card:hover,
+          .ed-btn--primary:hover,
+          .ed-btn--dark:hover,
+          .ed-btn--discord:hover {
+            transform: none !important;
+          }
         }
 
         /* ══════ FOCUS / A11Y ══════ */

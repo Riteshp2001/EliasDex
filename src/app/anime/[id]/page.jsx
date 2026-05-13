@@ -78,12 +78,13 @@ const epColor = (ep) => {
   return EP_COLORS.AbsoluteCinema;
 };
 
+// ─── Helper Components (sudah di-memo, tidak diubah banyak) ────────────────
 const DetailRow = memo(({ label, value }) => {
   if (!value) return null;
   return (
     <div className="flex justify-between items-start gap-3 py-2 border-b border-[#1A2030] last:border-0">
       <span className="text-xs text-[#8892A4] shrink-0">{label}</span>
-      <span className="text-xs text-[#E2E8F0] text-right">{value}</span>
+      <span className="text-xs text-[#E2E8F0] text-right break-words">{value}</span>
     </div>
   );
 });
@@ -131,6 +132,7 @@ const Player = memo(
             className="absolute inset-0 w-full h-full border-none"
             allowFullScreen
             allow="autoplay; encrypted-media"
+            loading="lazy"
           />
         </div>
 
@@ -341,7 +343,17 @@ const CharCard = memo(({ char }) => {
       style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}` }}
     >
       <div className="flex items-center gap-2 px-2.5 py-2 flex-1">
-        {cImg && <Image src={cImg} alt={cName} className="w-10 h-12 object-cover rounded-md shrink-0" width={40} height={48} />}
+        {cImg && (
+          <div className="relative w-10 h-12 shrink-0">
+            <Image
+              src={cImg}
+              alt={cName}
+              className="object-cover rounded-md"
+              fill
+              sizes="40px"
+            />
+          </div>
+        )}
         <div>
           <p className="font-semibold text-[#E2E8F0]">{cName}</p>
           <p
@@ -359,13 +371,15 @@ const CharCard = memo(({ char }) => {
             <p className="text-[10px] text-[#8892A4] mt-0.5">Japanese</p>
           </div>
           {va.person?.images?.jpg?.image_url && (
-            <Image
-              src={va.person.images.jpg.image_url}
-              alt={va.person.name}
-              className="w-10 h-12 object-cover rounded-md shrink-0"
-              width={40}
-              height={48}
-            />
+            <div className="relative w-10 h-12 shrink-0">
+              <Image
+                src={va.person.images.jpg.image_url}
+                alt={va.person.name}
+                className="object-cover rounded-md"
+                fill
+                sizes="40px"
+              />
+            </div>
           )}
         </div>
       )}
@@ -385,9 +399,9 @@ const AnimeCard = memo(({ entry }) => {
       className="flex flex-col rounded-xl overflow-hidden transition-transform hover:-translate-y-1"
       style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}`, textDecoration: "none" }}
     >
-      <div className="relative" style={{ paddingBottom: "140%" }}>
+      <div className="relative aspect-[2/3]">
         {img ? (
-          <Image src={img} alt={title} className="absolute inset-0 w-full h-full object-cover" width={100} height={140} />
+          <Image src={img} alt={title} fill className="object-cover" sizes="(max-width: 640px) 120px, 160px" />
         ) : (
           <div className="absolute inset-0 bg-[#1A2030]" />
         )}
@@ -406,33 +420,12 @@ const AnimeCard = memo(({ entry }) => {
 });
 AnimeCard.displayName = "AnimeCard";
 
+// ─── Constants for progress ────────────────────────────────────────────────
 const PLAYER_PROGRESS_API_URL = process.env.NEXT_PUBLIC_PLAYER_PROGRESS_URL;
 const PLAYER_EMBED_ORIGIN = "https://megaplay.buzz";
 const progressCacheKey = (animeId, episodeId) => `watch-progress:${animeId}:${episodeId}`;
-const saveCachedProgress = (animeId, episodeId, payload) => {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(progressCacheKey(animeId, episodeId), JSON.stringify(payload));
-  } catch {
-    // ignore localStorage failures
-  }
-};
-const loadCachedProgress = (animeId, episodeId) => {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(progressCacheKey(animeId, episodeId));
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-const shouldSendProgress = (lastSent, next) => {
-  if (!lastSent || lastSent.episodeId !== next.episodeId) return true;
-  if (next.eventType === "complete") return true;
-  if (next.percent >= lastSent.percent + 5) return true;
-  return Date.now() - (lastSent.sentAt || 0) >= 20000;
-};
 
+// ─── Main Component ────────────────────────────────────────────────────────
 export default function AnimePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -445,38 +438,38 @@ export default function AnimePage() {
   const [showFullSyn, setShowFullSyn] = useState(false);
   const [playerCategory, setPlayerCategory] = useState("sub");
   const [autoNextEnabled, setAutoNextEnabled] = useState(true);
+  
+  // ✅ Optimasi: lazy initialization watchProgressMap
   const [watchProgressMap, setWatchProgressMap] = useState(() => {
     if (typeof window === "undefined") return {};
     const map = {};
     const prefix = `watch-progress:${id}:`;
-    Object.keys(window.localStorage).forEach((key) => {
-      if (!key.startsWith(prefix)) return;
-      try {
+    try {
+      Object.keys(window.localStorage).forEach((key) => {
+        if (!key.startsWith(prefix)) return;
         const value = window.localStorage.getItem(key);
         if (!value) return;
         const payload = JSON.parse(value);
         const episodeId = key.slice(prefix.length);
         map[episodeId] = payload;
-      } catch {
-        // ignore malformed values
-      }
-    });
+      });
+    } catch (e) {
+      // ignore
+    }
     return map;
   });
+  
   const { user, isAuthenticated, updateWatchProgress } = useAuth();
 
   const { data: animeData, isLoading: animeLoading, isError: animeError } = useApi(`/anime/${id}/full`);
   const { data: epData, isLoading: epLoading } = useApi(`/anime/${id}/episodes?page=${epPage}`);
   const { data: charData, isLoading: charLoading } = useApi(tab === "characters" ? `/anime/${id}/characters` : null);
-  const { data: recData, isLoading: recLoading } = useApi(
-    tab === "recommended" ? `/anime/${id}/recommendations` : null,
-  );
+  const { data: recData, isLoading: recLoading } = useApi(tab === "recommended" ? `/anime/${id}/recommendations` : null);
 
   const anime = animeData?.data;
   const episodes = useMemo(() => {
     const list = epData?.data ?? [];
     if (list.length > 0) return list;
-
     const episodeCount = typeof anime?.episodes === "number" ? anime.episodes : null;
     if (episodeCount && episodeCount > 0) {
       return Array.from({ length: episodeCount }, (_, index) => ({
@@ -484,14 +477,14 @@ export default function AnimePage() {
         title: `Episode ${index + 1}`,
       }));
     }
-
     return [{ mal_id: 1, title: "Episode 1" }];
   }, [epData, anime]);
+  
   const pagination = epData?.pagination;
   const characters = charData?.data ?? [];
   const recommendations = recData?.data ?? [];
 
-  // activeEp sekarang pure derivation dari URL dan episodes, ga butuh state lagi
+  // Active episode derived from URL
   const activeEp = useMemo(() => {
     if (episodes.length === 0) return null;
     if (epFromUrl && episodes.some((e) => e.mal_id === epFromUrl)) return epFromUrl;
@@ -503,7 +496,7 @@ export default function AnimePage() {
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < episodes.length - 1;
 
-  // Navigasi episode (hanya ubah URL)
+  // Navigasi episode (hanya ubah URL, tidak re-mount)
   const navigateToEp = useCallback(
     (epId) => {
       router.replace(`/anime/${id}?ep=${epId}`, { scroll: false });
@@ -528,8 +521,17 @@ export default function AnimePage() {
     [navigateToEp],
   );
 
+  // Ref untuk throttling progress
   const lastSentProgressRef = useRef({ episodeId: null, percent: 0, sentAt: 0 });
   const latestProgressRef = useRef(null);
+
+  // ✅ FIX: Define shouldSendProgress BEFORE it is used
+  const shouldSendProgress = useCallback((lastSent, next) => {
+    if (!lastSent || lastSent.episodeId !== next.episodeId) return true;
+    if (next.eventType === "complete") return true;
+    if (next.percent >= lastSent.percent + 5) return true;
+    return Date.now() - (lastSent.sentAt || 0) >= 20000;
+  }, []);
 
   const persistWatchProgress = useCallback(
     async ({ animeId, episodeId, currentTime, duration, percent, eventType }) => {
@@ -542,14 +544,16 @@ export default function AnimePage() {
         eventType,
         updatedAt: new Date().toISOString(),
       };
-
       latestProgressRef.current = normalized;
-      saveCachedProgress(animeId, episodeId, normalized);
+      // Cache local
+      const cacheKey = progressCacheKey(animeId, episodeId);
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(normalized));
+      } catch {}
       setWatchProgressMap((prev) => ({ ...prev, [episodeId]: normalized }));
 
       if (isAuthenticated && anime) {
         if (!shouldSendProgress(lastSentProgressRef.current, normalized)) return;
-
         try {
           await updateWatchProgress(
             animeId,
@@ -558,7 +562,6 @@ export default function AnimePage() {
             anime.title,
             anime.images?.jpg?.image_url || "",
           );
-
           lastSentProgressRef.current = {
             episodeId,
             percent,
@@ -569,37 +572,29 @@ export default function AnimePage() {
         }
       }
     },
-    [setWatchProgressMap, anime, isAuthenticated, episodes.length, updateWatchProgress],
+    [isAuthenticated, anime, episodes.length, updateWatchProgress, shouldSendProgress],
   );
 
+  // Listener progress dari iframe
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.origin !== PLAYER_EMBED_ORIGIN && !event.origin?.includes("megaplay.buzz")) return;
       let data = event.data;
       if (typeof data === "string") {
-        try {
-          data = JSON.parse(data);
-        } catch {
-          return;
-        }
+        try { data = JSON.parse(data); } catch { return; }
       }
       if (data.channel !== "megacloud") return;
-
       const isWatchLog = data.type === "watching-log";
       const isTimeEvent = data.event === "time";
       const isPauseEvent = data.event === "pause";
       const isCompleteEvent = data.event === "complete";
       if (!isWatchLog && !isTimeEvent && !isPauseEvent && !isCompleteEvent) return;
 
-      const currentTime =
-        typeof data.currentTime === "number" ? data.currentTime : typeof data.time === "number" ? data.time : 0;
+      const currentTime = typeof data.currentTime === "number" ? data.currentTime : typeof data.time === "number" ? data.time : 0;
       const duration = typeof data.duration === "number" ? data.duration : 0;
-      const percent =
-        typeof data.percent === "number"
-          ? Math.round(data.percent)
-          : duration
-            ? Math.round((currentTime / duration) * 100)
-            : 0;
+      const percent = typeof data.percent === "number"
+        ? Math.round(data.percent)
+        : duration ? Math.round((currentTime / duration) * 100) : 0;
       const eventType = isWatchLog ? "watching-log" : data.event;
 
       if (!currentEp?.mal_id) return;
@@ -613,16 +608,14 @@ export default function AnimePage() {
       });
 
       if (isCompleteEvent && autoNextEnabled && hasNext) {
-        setTimeout(() => {
-          handleNext();
-        }, 250);
+        setTimeout(() => handleNext(), 250);
       }
     };
-
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [currentEp, id, persistWatchProgress, autoNextEnabled, hasNext, handleNext]);
+  }, [currentEp?.mal_id, id, persistWatchProgress, autoNextEnabled, hasNext, handleNext]);
 
+  // Send progress on unload (beacon)
   useEffect(() => {
     const sendUnloadProgress = () => {
       const progress = latestProgressRef.current;
@@ -633,40 +626,29 @@ export default function AnimePage() {
         const blob = new Blob([body], { type: "application/json" });
         navigator.sendBeacon(PLAYER_PROGRESS_API_URL, blob);
       } else {
-        fetch(PLAYER_PROGRESS_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-          keepalive: true,
-        }).catch(() => {});
+        fetch(PLAYER_PROGRESS_API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
       }
     };
-
     window.addEventListener("beforeunload", sendUnloadProgress);
     return () => window.removeEventListener("beforeunload", sendUnloadProgress);
   }, []);
 
-  // Track watch progress when episode changes (tetap aman karena setState di dalam callback async)
+  // Track when episode changes (untuk update server) – dipertahankan fungsinya
   useEffect(() => {
-    if (isAuthenticated && currentEp && anime?.data && id) {
+    if (isAuthenticated && currentEp && anime && id) {
       const episodeNumber = currentEp.mal_id;
       const totalEpisodes = episodes.length;
-
       updateWatchProgress(
         id,
         episodeNumber,
         totalEpisodes,
-        anime.data.title,
-        anime.data.images?.jpg?.image_url || "",
-      ).catch((error) => {
-        console.warn("Failed to update watch progress:", error);
-      });
+        anime.title,
+        anime.images?.jpg?.image_url || "",
+      ).catch((error) => console.warn("Failed to update watch progress:", error));
     }
-  }, [currentEp, isAuthenticated, id, anime?.data, episodes.length, updateWatchProgress]);
+  }, [currentEp, isAuthenticated, id, anime, episodes.length, updateWatchProgress]);
 
-  const handlePageChange = useCallback((p) => {
-    setEpPage(p);
-  }, []);
+  const handlePageChange = useCallback((p) => setEpPage(p), []);
 
   const legend = [
     { label: "Absolute Cinema", color: "rgb(29,161,242)" },
@@ -677,7 +659,7 @@ export default function AnimePage() {
     { label: "Filler", color: "#7C5C99" },
   ];
 
-  if (animeError)
+  if (animeError) {
     return (
       <main className="min-h-screen flex items-center justify-center" style={{ background: COLORS.bg }}>
         <div className="text-center p-8">
@@ -688,6 +670,7 @@ export default function AnimePage() {
         </div>
       </main>
     );
+  }
 
   return (
     <main className="min-h-screen" style={{ background: COLORS.bg, color: COLORS.text }}>
@@ -698,11 +681,11 @@ export default function AnimePage() {
         </Head>
       )}
 
-      {/* MAIN CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
+        {/* Responsive: stack vertikal di mobile, horizontal di xl */}
+        <div className="flex flex-col xl:flex-row gap-6 items-start">
           {/* LEFT: Player + Tabs */}
-          <div className="flex flex-col gap-5">
+          <div className="flex-1 min-w-0 w-full">
             {animeLoading ? (
               <div
                 className="aspect-video rounded-xl flex items-center justify-center"
@@ -724,8 +707,8 @@ export default function AnimePage() {
             )}
 
             {/* TABS */}
-            <div>
-              <div className="flex gap-0 border-b" style={{ borderColor: COLORS.border }}>
+            <div className="mt-5">
+              <div className="flex gap-0 border-b overflow-x-auto scrollbar-hide" style={{ borderColor: COLORS.border }}>
                 {[
                   { key: "episodes", label: "Episodes" },
                   { key: "detail", label: "Detail & Info" },
@@ -752,14 +735,10 @@ export default function AnimePage() {
               <div className="pt-4">
                 {tab === "episodes" && (
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                      <Pagination
-                        page={epPage}
-                        total={pagination?.last_visible_page ?? 1}
-                        onChange={handlePageChange}
-                      />
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <Pagination page={epPage} total={pagination?.last_visible_page ?? 1} onChange={handlePageChange} />
                       <div
-                        className="flex rounded-lg overflow-hidden"
+                        className="flex rounded-lg overflow-hidden shrink-0"
                         style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}` }}
                       >
                         <button
@@ -785,7 +764,7 @@ export default function AnimePage() {
                       </div>
                       <button
                         onClick={() => setAutoNextEnabled((prev) => !prev)}
-                        className="rounded-lg px-3 py-2 text-xs font-semibold transition-all"
+                        className="rounded-lg px-3 py-2 text-xs font-semibold transition-all shrink-0"
                         style={{
                           background: autoNextEnabled ? COLORS.accent : COLORS.surface,
                           color: autoNextEnabled ? "#0B0E14" : COLORS.text,
@@ -800,11 +779,7 @@ export default function AnimePage() {
                       style={{ background: COLORS.surface, border: `1px solid ${COLORS.border}` }}
                     >
                       {legend.map((l) => (
-                        <div
-                          key={l.label}
-                          className="flex items-center gap-1.5 text-[11px]"
-                          style={{ color: COLORS.text }}
-                        >
+                        <div key={l.label} className="flex items-center gap-1.5 text-[11px]" style={{ color: COLORS.text }}>
                           <span className="w-2.5 h-2.5 rounded-full" style={{ background: l.color }} />
                           {l.label}
                         </div>
@@ -814,8 +789,14 @@ export default function AnimePage() {
                       <Loader />
                     ) : (
                       <div
-                        className={layout === "grid" ? "grid gap-1.5" : "flex flex-col gap-1.5"}
-                        style={layout === "grid" ? { gridTemplateColumns: "repeat(auto-fill, minmax(48px, 1fr))" } : {}}
+                        className={layout === "grid" ? "grid gap-2" : "flex flex-col gap-1.5"}
+                        style={
+                          layout === "grid"
+                            ? {
+                                gridTemplateColumns: "repeat(auto-fill, minmax(55px, 1fr))",
+                              }
+                            : {}
+                        }
                       >
                         {episodes.map((ep) => (
                           <EpisodeCard
@@ -832,348 +813,203 @@ export default function AnimePage() {
                   </div>
                 )}
 
-                {tab === "detail" &&
-                  (animeLoading ? (
-                    <Loader />
-                  ) : anime ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="md:col-span-2">
-                        <Card>
-                          <CardHead>
-                            <FaInfoCircle className="text-amber-400" size={14} /> Synopsis
-                          </CardHead>
-                          <div className="px-4 py-3">
-                            <p className="text-sm leading-relaxed" style={{ color: "#C4CBDA" }}>
-                              {showFullSyn
-                                ? anime.synopsis
-                                : (anime.synopsis?.slice(0, 400) ?? "") + (anime.synopsis?.length > 400 ? "…" : "")}
-                            </p>
-                            {anime.synopsis?.length > 400 && (
-                              <button
-                                onClick={() => setShowFullSyn(!showFullSyn)}
-                                className="text-xs mt-2 font-medium"
-                                style={{
-                                  color: COLORS.accent,
-                                  background: "none",
-                                  border: "none",
-                                  cursor: "pointer",
-                                  padding: 0,
-                                }}
-                              >
-                                {showFullSyn ? "Show less" : "Read more"}
-                              </button>
-                            )}
-                          </div>
-                        </Card>
-                      </div>
+                {tab === "detail" && (animeLoading ? <Loader /> : anime && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="md:col-span-2">
                       <Card>
-                        <CardHead>
-                          <FaInfoCircle className="text-amber-400" size={14} /> Information
-                        </CardHead>
-                        <div className="px-4 py-2">
-                          <DetailRow label="Type" value={anime.type} />
-                          <DetailRow label="Episodes" value={anime.episodes ?? "Ongoing"} />
-                          <DetailRow label="Status" value={anime.status} />
-                          <DetailRow label="Aired" value={anime.aired?.string} />
-                          <DetailRow label="Duration" value={anime.duration} />
-                          <DetailRow label="Rating" value={anime.rating} />
-                          <DetailRow label="Source" value={anime.source} />
-                          <DetailRow label="Season" value={anime.season ? `${anime.season} ${anime.year}` : null} />
-                        </div>
-                      </Card>
-                      <Card>
-                        <CardHead>
-                          <FaBuilding className="text-amber-400" size={12} /> Production
-                        </CardHead>
-                        <div className="px-4 py-2">
-                          <DetailRow label="Studios" value={anime.studios?.map((s) => s.name).join(", ")} />
-                          <DetailRow label="Producers" value={anime.producers?.map((p) => p.name).join(", ")} />
-                          <DetailRow label="Licensors" value={anime.licensors?.map((l) => l.name).join(", ")} />
-                          {anime.broadcast?.string && <DetailRow label="Broadcast" value={anime.broadcast.string} />}
-                          <div className="flex justify-between py-2 items-center">
-                            <span className="text-xs" style={{ color: COLORS.muted }}>
-                              Favorites
-                            </span>
-                            <span
-                              className="text-xs font-semibold flex items-center gap-1"
-                              style={{ color: "#F97096" }}
+                        <CardHead><FaInfoCircle className="text-amber-400" size={14} /> Synopsis</CardHead>
+                        <div className="px-4 py-3">
+                          <p className="text-sm leading-relaxed" style={{ color: "#C4CBDA" }}>
+                            {showFullSyn ? anime.synopsis : (anime.synopsis?.slice(0, 400) ?? "") + (anime.synopsis?.length > 400 ? "…" : "")}
+                          </p>
+                          {anime.synopsis?.length > 400 && (
+                            <button
+                              onClick={() => setShowFullSyn(!showFullSyn)}
+                              className="text-xs mt-2 font-medium"
+                              style={{ color: COLORS.accent, background: "none", border: "none", cursor: "pointer", padding: 0 }}
                             >
-                              <FaHeart size={10} /> {fmt(anime.favorites)}
-                            </span>
-                          </div>
-                        </div>
-                      </Card>
-                      {(anime.theme?.openings?.length > 0 || anime.theme?.endings?.length > 0) && (
-                        <Card>
-                          <CardHead>
-                            <FaMusic className="text-amber-400" size={12} /> Theme Songs
-                          </CardHead>
-                          <div className="px-4 py-3 space-y-3">
-                            {anime.theme.openings?.length > 0 && (
-                              <div>
-                                <p
-                                  className="text-[10px] font-semibold uppercase tracking-wider mb-1.5"
-                                  style={{ color: COLORS.accent }}
-                                >
-                                  Openings
-                                </p>
-                                {anime.theme.openings.map((op, i) => (
-                                  <p
-                                    key={i}
-                                    className="text-xs py-1.5 border-b last:border-0"
-                                    style={{ color: "#C4CBDA", borderColor: COLORS.border }}
-                                  >
-                                    {op}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                            {anime.theme.endings?.length > 0 && (
-                              <div>
-                                <p
-                                  className="text-[10px] font-semibold uppercase tracking-wider mb-1.5"
-                                  style={{ color: COLORS.muted }}
-                                >
-                                  Endings
-                                </p>
-                                {anime.theme.endings.map((ed, i) => (
-                                  <p
-                                    key={i}
-                                    className="text-xs py-1.5 border-b last:border-0"
-                                    style={{ color: "#C4CBDA", borderColor: COLORS.border }}
-                                  >
-                                    {ed}
-                                  </p>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </Card>
-                      )}
-                      <Card>
-                        <CardHead>
-                          <FaGlobe className="text-amber-400" size={12} /> Links
-                        </CardHead>
-                        <div className="px-4 py-3 space-y-3">
-                          {anime.streaming?.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {anime.streaming.map((s, i) => (
-                                <a
-                                  key={i}
-                                  href={s.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg"
-                                  style={{
-                                    background: COLORS.surface2,
-                                    border: `1px solid ${COLORS.border}`,
-                                    color: COLORS.text,
-                                    textDecoration: "none",
-                                  }}
-                                >
-                                  {s.name} <FaExternalLinkAlt size={9} />
-                                </a>
-                              ))}
-                            </div>
-                          )}
-                          {anime.external?.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {anime.external.map((l, i) => (
-                                <a
-                                  key={i}
-                                  href={l.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[11px] px-2.5 py-1 rounded-full transition-colors"
-                                  style={{
-                                    background: COLORS.surface2,
-                                    border: `1px solid ${COLORS.border}`,
-                                    color: COLORS.muted,
-                                    textDecoration: "none",
-                                  }}
-                                >
-                                  {l.name}
-                                </a>
-                              ))}
-                            </div>
+                              {showFullSyn ? "Show less" : "Read more"}
+                            </button>
                           )}
                         </div>
                       </Card>
                     </div>
-                  ) : null)}
-
-                {tab === "characters" &&
-                  (charLoading ? (
-                    <Loader />
-                  ) : (
-                    <>
-                      <p className="text-xs mb-3" style={{ color: COLORS.muted }}>
-                        {characters.length} characters
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {characters.slice(0, 30).map((c) => (
-                          <CharCard key={c.character?.mal_id} char={c} />
-                        ))}
+                    <Card>
+                      <CardHead><FaInfoCircle className="text-amber-400" size={14} /> Information</CardHead>
+                      <div className="px-4 py-2">
+                        <DetailRow label="Type" value={anime.type} />
+                        <DetailRow label="Episodes" value={anime.episodes ?? "Ongoing"} />
+                        <DetailRow label="Status" value={anime.status} />
+                        <DetailRow label="Aired" value={anime.aired?.string} />
+                        <DetailRow label="Duration" value={anime.duration} />
+                        <DetailRow label="Rating" value={anime.rating} />
+                        <DetailRow label="Source" value={anime.source} />
+                        <DetailRow label="Season" value={anime.season ? `${anime.season} ${anime.year}` : null} />
                       </div>
-                    </>
-                  ))}
-
-                {tab === "recommended" &&
-                  (recLoading ? (
-                    <Loader />
-                  ) : (
-                    <>
-                      <p className="text-xs mb-3" style={{ color: COLORS.muted }}>
-                        {recommendations.length} recommendations
-                      </p>
-                      <div
-                        className="grid gap-3"
-                        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))" }}
-                      >
-                        {recommendations.slice(0, 20).map((r) => (
-                          <AnimeCard key={r.entry?.mal_id} entry={r.entry} />
-                        ))}
+                    </Card>
+                    <Card>
+                      <CardHead><FaBuilding className="text-amber-400" size={12} /> Production</CardHead>
+                      <div className="px-4 py-2">
+                        <DetailRow label="Studios" value={anime.studios?.map((s) => s.name).join(", ")} />
+                        <DetailRow label="Producers" value={anime.producers?.map((p) => p.name).join(", ")} />
+                        <DetailRow label="Licensors" value={anime.licensors?.map((l) => l.name).join(", ")} />
+                        {anime.broadcast?.string && <DetailRow label="Broadcast" value={anime.broadcast.string} />}
+                        <div className="flex justify-between py-2 items-center">
+                          <span className="text-xs" style={{ color: COLORS.muted }}>Favorites</span>
+                          <span className="text-xs font-semibold flex items-center gap-1" style={{ color: "#F97096" }}>
+                            <FaHeart size={10} /> {fmt(anime.favorites)}
+                          </span>
+                        </div>
                       </div>
-                    </>
-                  ))}
+                    </Card>
+                    {(anime.theme?.openings?.length > 0 || anime.theme?.endings?.length > 0) && (
+                      <Card>
+                        <CardHead><FaMusic className="text-amber-400" size={12} /> Theme Songs</CardHead>
+                        <div className="px-4 py-3 space-y-3">
+                          {anime.theme.openings?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: COLORS.accent }}>Openings</p>
+                              {anime.theme.openings.map((op, i) => (
+                                <p key={i} className="text-xs py-1.5 border-b last:border-0" style={{ color: "#C4CBDA", borderColor: COLORS.border }}>{op}</p>
+                              ))}
+                            </div>
+                          )}
+                          {anime.theme.endings?.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: COLORS.muted }}>Endings</p>
+                              {anime.theme.endings.map((ed, i) => (
+                                <p key={i} className="text-xs py-1.5 border-b last:border-0" style={{ color: "#C4CBDA", borderColor: COLORS.border }}>{ed}</p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    )}
+                    <Card>
+                      <CardHead><FaGlobe className="text-amber-400" size={12} /> Links</CardHead>
+                      <div className="px-4 py-3 space-y-3">
+                        {anime.streaming?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {anime.streaming.map((s, i) => (
+                              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg" style={{ background: COLORS.surface2, border: `1px solid ${COLORS.border}`, color: COLORS.text, textDecoration: "none" }}>
+                                {s.name} <FaExternalLinkAlt size={9} />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        {anime.external?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {anime.external.map((l, i) => (
+                              <a key={i} href={l.url} target="_blank" rel="noopener noreferrer" className="text-[11px] px-2.5 py-1 rounded-full transition-colors" style={{ background: COLORS.surface2, border: `1px solid ${COLORS.border}`, color: COLORS.muted, textDecoration: "none" }}>
+                                {l.name}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+                ))}
+
+                {tab === "characters" && (charLoading ? <Loader /> : (
+                  <>
+                    <p className="text-xs mb-3" style={{ color: COLORS.muted }}>{characters.length} characters</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {characters.slice(0, 30).map((c) => <CharCard key={c.character?.mal_id} char={c} />)}
+                    </div>
+                  </>
+                ))}
+
+                {tab === "recommended" && (recLoading ? <Loader /> : (
+                  <>
+                    <p className="text-xs mb-3" style={{ color: COLORS.muted }}>{recommendations.length} recommendations</p>
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                      {recommendations.slice(0, 20).map((r) => <AnimeCard key={r.entry?.mal_id} entry={r.entry} />)}
+                    </div>
+                  </>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* RIGHT SIDEBAR */}
-          <div className="flex flex-col gap-4 xl:sticky xl:top-4">
-            {animeLoading ? (
-              <Loader />
-            ) : (
-              anime && (
-                <>
+          {/* RIGHT SIDEBAR - pindah ke bawah di mobile, sticky di xl */}
+          <div className="w-full xl:w-80 xl:sticky xl:top-4 flex flex-col gap-4">
+            {animeLoading ? <Loader /> : anime && (
+              <>
+                <Card>
+                  <div className="relative aspect-[2/3] max-h-[300px]">
+                    <Image
+                      src={anime.images?.webp?.large_image_url}
+                      alt={anime.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 320px"
+                    />
+                    <div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{ background: "linear-gradient(to top, #151921 0%, transparent 55%)" }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-sm font-bold text-[#E2E8F0] leading-tight">{anime.title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: COLORS.accent }}>{anime.title_japanese}</p>
+                    </div>
+                  </div>
+                  <div className="p-3 flex flex-wrap gap-1.5">
+                    {anime.genres?.slice(0, 6).map((g) => <Tag key={g.mal_id} amber>{g.name}</Tag>)}
+                    <Tag>{anime.type}</Tag>
+                  </div>
+                </Card>
+                <Card>
+                  <CardHead><FaStar className="text-amber-400" size={12} /> Score & Stats</CardHead>
+                  <div className="grid grid-cols-2 gap-px p-3" style={{ background: COLORS.border }}>
+                    {[
+                      { label: "Score", val: fmtScore(anime.score), color: scoreColor(anime.score), sub: `${fmt(anime.scored_by)} voters` },
+                      { label: "Rank", val: `#${anime.rank ?? "?"}`, color: COLORS.accent },
+                      { label: "Popularity", val: `#${anime.popularity ?? "?"}`, color: COLORS.accent },
+                      { label: "Members", val: fmtMembers(anime.members), color: COLORS.accent },
+                    ].map(({ label, val, color, sub }) => (
+                      <div key={label} className="flex flex-col items-center justify-center py-3" style={{ background: COLORS.surface }}>
+                        <span className="text-xl font-bold" style={{ color }}>{val}</span>
+                        <span className="text-[10px] mt-0.5" style={{ color: COLORS.muted }}>{label}</span>
+                        {sub && <span className="text-[9px]" style={{ color: COLORS.mutedDim }}>{sub}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+                <Card>
+                  <CardHead><FaInfoCircle className="text-amber-400" size={12} /> Quick Info</CardHead>
+                  <div className="px-3 py-1">
+                    <DetailRow label="Episodes" value={anime.episodes ?? "Ongoing"} />
+                    <DetailRow label="Status" value={anime.status} />
+                    <DetailRow label="Aired" value={anime.aired?.string} />
+                    <DetailRow label="Duration" value={anime.duration} />
+                    <DetailRow label="Season" value={anime.season ? `${anime.season} ${anime.year}` : null} />
+                    <DetailRow label="Studios" value={anime.studios?.map((s) => s.name).join(", ")} />
+                    <div className="flex justify-between py-2 items-center">
+                      <span className="text-xs" style={{ color: COLORS.muted }}>Favorites</span>
+                      <span className="text-xs font-semibold flex items-center gap-1" style={{ color: "#F97096" }}><FaHeart size={9} /> {fmt(anime.favorites)}</span>
+                    </div>
+                  </div>
+                </Card>
+                {currentEp && (
                   <Card>
-                    <div className="relative">
-                      <Image
-                        src={anime.images?.webp?.large_image_url}
-                        alt={anime.title}
-                        className="w-full block object-cover"
-                        style={{ maxHeight: 200 }}
-                        width={100}
-                        height={200}
-                      />
-                      <div
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ background: "linear-gradient(to top, #151921 0%, transparent 55%)" }}
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 p-3">
-                        <p className="text-sm font-bold text-[#E2E8F0] leading-tight">{anime.title}</p>
-                        <p className="text-xs mt-0.5" style={{ color: COLORS.accent }}>
-                          {anime.title_japanese}
+                    <CardHead>Now Watching</CardHead>
+                    <div className="px-3 py-2.5">
+                      <p className="text-xs font-bold" style={{ color: COLORS.accent }}>Episode {currentEp.mal_id}</p>
+                      {currentEp.title && <p className="text-sm font-semibold mt-0.5" style={{ color: COLORS.text }}>{currentEp.title}</p>}
+                      {currentEp.aired && (
+                        <p className="text-[11px] mt-1" style={{ color: COLORS.muted }}>
+                          Aired: {new Date(currentEp.aired).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
-                      </div>
-                    </div>
-                    <div className="p-3 flex flex-wrap gap-1.5">
-                      {anime.genres?.slice(0, 6).map((g) => (
-                        <Tag key={g.mal_id} amber>
-                          {g.name}
-                        </Tag>
-                      ))}
-                      <Tag>{anime.type}</Tag>
+                      )}
+                      {currentEp.score && <p className="text-[11px] mt-0.5" style={{ color: scoreColor(currentEp.score) }}>★ {currentEp.score.toFixed(1)} community score</p>}
+                      {currentEp.filler && (
+                        <span className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(124,92,153,0.2)", color: "#B89BD0" }}>FILLER EPISODE</span>
+                      )}
                     </div>
                   </Card>
-                  <Card>
-                    <CardHead>
-                      <FaStar className="text-amber-400" size={12} /> Score & Stats
-                    </CardHead>
-                    <div className="grid grid-cols-2 gap-px p-3" style={{ background: COLORS.border }}>
-                      {[
-                        {
-                          label: "Score",
-                          val: fmtScore(anime.score),
-                          color: scoreColor(anime.score),
-                          sub: `${fmt(anime.scored_by)} voters`,
-                        },
-                        { label: "Rank", val: `#${anime.rank ?? "?"}`, color: COLORS.accent },
-                        { label: "Popularity", val: `#${anime.popularity ?? "?"}`, color: COLORS.accent },
-                        { label: "Members", val: fmtMembers(anime.members), color: COLORS.accent },
-                      ].map(({ label, val, color, sub }) => (
-                        <div
-                          key={label}
-                          className="flex flex-col items-center justify-center py-3"
-                          style={{ background: COLORS.surface }}
-                        >
-                          <span className="text-xl font-bold" style={{ color }}>
-                            {val}
-                          </span>
-                          <span className="text-[10px] mt-0.5" style={{ color: COLORS.muted }}>
-                            {label}
-                          </span>
-                          {sub && (
-                            <span className="text-[9px]" style={{ color: COLORS.mutedDim }}>
-                              {sub}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                  <Card>
-                    <CardHead>
-                      <FaInfoCircle className="text-amber-400" size={12} /> Quick Info
-                    </CardHead>
-                    <div className="px-3 py-1">
-                      <DetailRow label="Episodes" value={anime.episodes ?? "Ongoing"} />
-                      <DetailRow label="Status" value={anime.status} />
-                      <DetailRow label="Aired" value={anime.aired?.string} />
-                      <DetailRow label="Duration" value={anime.duration} />
-                      <DetailRow label="Season" value={anime.season ? `${anime.season} ${anime.year}` : null} />
-                      <DetailRow label="Studios" value={anime.studios?.map((s) => s.name).join(", ")} />
-                      <div className="flex justify-between py-2 items-center">
-                        <span className="text-xs" style={{ color: COLORS.muted }}>
-                          Favorites
-                        </span>
-                        <span className="text-xs font-semibold flex items-center gap-1" style={{ color: "#F97096" }}>
-                          <FaHeart size={9} /> {fmt(anime.favorites)}
-                        </span>
-                      </div>
-                    </div>
-                  </Card>
-                  {currentEp && (
-                    <Card>
-                      <CardHead>Now Watching</CardHead>
-                      <div className="px-3 py-2.5">
-                        <p className="text-xs font-bold" style={{ color: COLORS.accent }}>
-                          Episode {currentEp.mal_id}
-                        </p>
-                        {currentEp.title && (
-                          <p className="text-sm font-semibold mt-0.5" style={{ color: COLORS.text }}>
-                            {currentEp.title}
-                          </p>
-                        )}
-                        {currentEp.aired && (
-                          <p className="text-[11px] mt-1" style={{ color: COLORS.muted }}>
-                            Aired:{" "}
-                            {new Date(currentEp.aired).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
-                        )}
-                        {currentEp.score && (
-                          <p className="text-[11px] mt-0.5" style={{ color: scoreColor(currentEp.score) }}>
-                            ★ {currentEp.score.toFixed(1)} community score
-                          </p>
-                        )}
-                        {currentEp.filler && (
-                          <span
-                            className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full font-medium"
-                            style={{ background: "rgba(124,92,153,0.2)", color: "#B89BD0" }}
-                          >
-                            FILLER EPISODE
-                          </span>
-                        )}
-                      </div>
-                    </Card>
-                  )}
-                </>
-              )
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1182,18 +1018,16 @@ export default function AnimePage() {
       <Footer />
 
       <style jsx global>{`
-        * {
-          box-sizing: border-box;
-        }
-        body {
-          background: #0b0e14;
-        }
+        * { box-sizing: border-box; }
+        body { background: #0b0e14; }
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
     </main>
   );

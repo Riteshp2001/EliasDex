@@ -175,8 +175,30 @@ input:focus {
   align-items: center;
 }
 
-/* dummy class untuk memenuhi className di App.jsx (tidak berpengaruh) */
-.opacityWrapper,
+.opacityWrapper {
+  position: relative;
+  z-index: 1;
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+
+.layout-blur {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
 .opacityBg {
-  /* kosong, tidak perlu style */
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.027);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s ease;
+  z-index: 40;
+}
+
+.opacityBg.active {
+  opacity: 1;
+  visibility: visible;
 }

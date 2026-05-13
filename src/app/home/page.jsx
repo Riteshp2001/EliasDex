@@ -277,6 +277,7 @@ const ScheduleCard = ({ item }) => (
         fill
         sizes="(max-width: 640px) 48px, 56px"
         className="object-cover transition-transform duration-300 group-hover:scale-105"
+        style={{ willChange: 'transform' }}
         loading="lazy"
         onError={(e) => {
           e.currentTarget.src = "/placeholder.jpg";
@@ -419,7 +420,9 @@ const Home = () => {
               src={spotlightList[safeIndex]?.images?.jpg?.large_image_url || "/placeholder.jpg"}
               alt={spotlightList[safeIndex]?.title}
               fill
+              priority
               className="w-full h-full object-cover object-top"
+              style={{ willChange: 'auto' }}
               onError={(e) => {
                 e.currentTarget.src = "/placeholder.jpg";
               }}
@@ -433,7 +436,7 @@ const Home = () => {
             <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 md:px-10 pb-12 sm:pb-14">
               <div className="max-w-xs sm:max-w-md md:max-w-xl">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-3">
+                <div className="spotlight-badge inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-3 py-1 text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-3">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                   Airing Now · {safeIndex + 1}/{spotlightList.length}
                 </div>
@@ -483,6 +486,7 @@ const Home = () => {
                   <Link
                     href={`/anime/${spotlightList[safeIndex]?.mal_id}`}
                     className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-violet-900/50 hover:shadow-violet-700/50 hover:scale-[1.02] text-xs sm:text-sm"
+                    style={{ willChange: 'transform' }}
                   >
                     <FaPlay size={10} /> Watch Now
                   </Link>
@@ -659,8 +663,14 @@ const Home = () => {
           from { transform: translateX(-50%); }
           to   { transform: translateX(0); }
         }
-        .animate-scrollLeft  { animation: scrollLeft  35s linear infinite; }
-        .animate-scrollRight { animation: scrollRight 35s linear infinite; }
+        .animate-scrollLeft  {
+          animation: scrollLeft  35s linear infinite;
+          will-change: transform;
+        }
+        .animate-scrollRight {
+          animation: scrollRight 35s linear infinite;
+          will-change: transform;
+        }
         .animate-scrollLeft:hover,
         .animate-scrollRight:hover { animation-play-state: paused; }
 
@@ -673,6 +683,56 @@ const Home = () => {
 
         /* ── Prevent layout shift on spotlight image ── */
         img { max-width: 100%; }
+
+        /* ══ REDUCED MOTION — old / low-power devices ══
+           Triggered automatically when OS/browser has
+           "Reduce Motion" enabled (Android, iOS, Windows). */
+        @media (prefers-reduced-motion: reduce) {
+          /* Kill all animations & transitions globally */
+          *, *::before, *::after {
+            animation-duration:       0.01ms !important;
+            animation-iteration-count: 1     !important;
+            transition-duration:      0.01ms !important;
+            scroll-behavior:          auto   !important;
+          }
+
+          /* Free the compositor layers we no longer need */
+          .animate-scrollLeft,
+          .animate-scrollRight {
+            animation: none !important;
+            will-change: auto;
+          }
+
+          /* Stop the Tailwind pulse on skeletons */
+          .animate-pulse {
+            animation: none !important;
+            opacity: 0.5;
+          }
+
+          /* Remove scale transforms on hover */
+          .hover\\:scale-\\[1\\.02\\]:hover,
+          .group:hover .group-hover\\:scale-105 {
+            transform: none !important;
+          }
+
+          /* Disable heavy backdrop-blur on hover-triggered elements */
+          .hover\\:bg-black\\/70 {
+            backdrop-filter: none !important;
+          }
+        }
+
+        /* ══ BACKDROP-BLUR PERFORMANCE
+           backdrop-filter is GPU-expensive. Limit its use
+           to elements that truly need it, and only on
+           devices that can handle it smoothly. ══ */
+        @media (max-width: 640px) {
+          /* On small/older screens, strip backdrop-blur from
+             decorative elements; keep only the spotlight badge. */
+          .backdrop-blur-sm:not(.spotlight-badge) {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+        }
       `}</style>
     </div>
   );

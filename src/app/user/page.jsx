@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -243,25 +243,73 @@ export default function UserPage() {
   const [loadingHistory, setLoadingHistory] = useState(true);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) router.push("/login");
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
+    }
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetch("/api/user/history")
-      .then((res) => res.json())
-      .then((data) => setHistory(data.history ?? []))
-      .catch(() => setHistory([]))
-      .finally(() => setLoadingHistory(false));
+
+    const controller = new AbortController();
+
+    const fetchJson = async (url) => {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error("Fetch failed");
+      const data = await response.json();
+      return Array.isArray(data.history) ? data.history : [];
+    };
+
+    (async () => {
+      try {
+        const [historyData, comicData] = await Promise.all([
+          fetchJson("/api/user/history"),
+          fetchJson("/api/user/comic-progress"),
+        ]);
+        setHistory(historyData);
+        setComicHistory(comicData);
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setHistory([]);
+          setComicHistory([]);
+        }
+      } finally {
+        setLoadingHistory(false);
+      }
+    })();
+
+    return () => controller.abort();
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    fetch("/api/user/comic-progress")
-      .then((res) => res.json())
-      .then((data) => setComicHistory(data.history ?? []))
-      .catch(() => setComicHistory([]));
-  }, [isAuthenticated]);
+  // ========== SEMUA useMemo DIPINDAH KE SINI (sebelum early return) ==========
+  const displayUser = useMemo(
+    () => ({
+      ...(user || {}),
+      level: userStats?.level || 1,
+      totalXp: userStats?.totalXp || 0,
+      levelProgress: Math.max(0, Math.min(userStats?.levelProgress ?? 0, 100)),
+    }),
+    [user, userStats],
+  );
+
+  const tierStyle = useMemo(() => getTierStyle(displayUser.donorTier), [displayUser.donorTier]);
+  const isDonator = displayUser.isDonator && tierStyle !== null;
+
+  const recentAnimeHistory = useMemo(() => history.slice(0, 5), [history]);
+  const recentComicHistory = useMemo(() => comicHistory.slice(0, 5), [comicHistory]);
+
+  const stats = useMemo(
+    () => ({
+      totalJudul: history.length,
+      totalEpisode: history.reduce((sum, item) => sum + (item.currentEp || 0), 0),
+      selesai: history.filter((item) => (item.percent ?? 0) >= 100).length,
+      sedangDitonton: history.filter((item) => (item.percent ?? 0) > 0 && (item.percent ?? 0) < 100).length,
+      totalComics: comicHistory.length,
+      totalChapters: comicHistory.reduce((sum, item) => sum + (item.currentChapter || 0), 0),
+    }),
+    [history, comicHistory],
+  );
+  // ==========================================================================
 
   if (loading || !user) {
     return (
@@ -270,25 +318,6 @@ export default function UserPage() {
       </div>
     );
   }
-
-  const displayUser = {
-    ...user,
-    level: userStats.level || 1,
-    totalXp: userStats.totalXp || 0,
-    levelProgress: userStats.levelProgress || 0,
-  };
-
-  const tierStyle = getTierStyle(displayUser.donorTier);
-  const isDonator = displayUser.isDonator && tierStyle !== null;
-
-  const stats = {
-    totalJudul: history.length,
-    totalEpisode: history.reduce((sum, item) => sum + (item.currentEp || 0), 0),
-    selesai: history.filter((item) => (item.percent ?? 0) >= 100).length,
-    sedangDitonton: history.filter((item) => (item.percent ?? 0) > 0 && (item.percent ?? 0) < 100).length,
-    totalComics: comicHistory.length,
-    totalChapters: comicHistory.reduce((sum, item) => sum + (item.currentChapter || 0), 0),
-  };
 
   return (
     <>
@@ -301,47 +330,51 @@ export default function UserPage() {
           font-family: 'Inter', system-ui, sans-serif;
           background: #0a0a0a;
           color: #a1a1aa;
+          min-height: 100vh;
+          width: 100%;
+          overflow-x: hidden;
         }
 
         .page-container {
-          max-width: 1200px;
+          width: min(1200px, 100%);
           margin: 0 auto;
-          padding: 3rem 2rem;
+          padding: clamp(1rem, 3vw, 3rem);
         }
 
-        /* Profile Header */
         .profile-header {
           display: flex;
-          align-items: center;
-          gap: 2rem;
-          margin-bottom: 3rem;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: clamp(1rem, 2vw, 2rem);
+          margin-bottom: clamp(1.5rem, 3vw, 3rem);
+          flex-wrap: wrap;
         }
 
         .avatar-wrapper {
           position: relative;
-          width: 80px;
-          height: 80px;
+          width: clamp(3.25rem, 8vw, 5rem);
+          height: clamp(3.25rem, 8vw, 5rem);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
 
         .avatar {
-          width: 80px;
-          height: 80px;
+          width: 100%;
+          height: 100%;
           border-radius: 50%;
           background: #1a1a1a;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 2rem;
+          font-size: clamp(1.2rem, 2vw, 1.8rem);
           font-weight: 600;
           color: #e4e4e7;
           overflow: hidden;
           border: 2px solid #27272a;
           position: relative;
-          transition: all 0.3s ease;
         }
 
         .avatar.donator {
@@ -363,41 +396,47 @@ export default function UserPage() {
 
         .donor-badge {
           position: absolute;
-          bottom: -5px;
-          right: -5px;
-          width: 28px;
-          height: 28px;
+          bottom: -0.25rem;
+          right: -0.25rem;
+          width: clamp(1.5rem, 4vw, 2.1rem);
+          height: clamp(1.5rem, 4vw, 2.1rem);
           border-radius: 50%;
           border: 2px solid #0a0a0a;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: clamp(0.75rem, 1vw, 1rem);
           font-weight: bold;
           z-index: 10;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          transition: transform 0.2s;
+          transition: transform 0.2s ease;
+          will-change: transform;
         }
 
         .donor-badge:hover {
-          transform: scale(1.1);
+          transform: scale(1.08);
         }
 
         .user-details {
           flex: 1;
+          min-width: 0;
         }
 
         .name-row {
           display: flex;
-          align-items: baseline;
-          gap: 12px;
+          align-items: flex-end;
+          gap: 0.75rem;
           flex-wrap: wrap;
         }
 
         .display-name {
-          font-size: 1.75rem;
+          font-size: clamp(1.25rem, 4vw, 2.25rem);
           font-weight: 700;
+          line-height: 1.1;
           letter-spacing: -0.02em;
+          overflow-wrap: break-word;
+          word-wrap: break-word;
+          max-width: 100%;
         }
 
         .display-name.donator {
@@ -417,10 +456,9 @@ export default function UserPage() {
           display: inline-flex;
           align-items: center;
           background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(4px);
-          padding: 4px 10px;
-          border-radius: 40px;
-          font-size: 0.85rem;
+          padding: 0.4rem 0.85rem;
+          border-radius: 999px;
+          font-size: clamp(0.75rem, 1vw, 0.95rem);
           font-weight: 700;
           letter-spacing: 0.02em;
           border: 1px solid rgba(255,255,255,0.1);
@@ -440,45 +478,47 @@ export default function UserPage() {
         }
 
         .username {
-          font-size: 0.875rem;
+          font-size: 0.9rem;
           color: #71717a;
-          margin-top: 4px;
+          margin-top: 0.35rem;
+          overflow-wrap: anywhere;
         }
 
         .donor-tier-badge {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          margin-top: 0.5rem;
-          padding: 0.25rem 0.9rem;
+          gap: 0.4rem;
+          margin-top: 0.6rem;
+          padding: 0.35rem 0.85rem;
           border-radius: 2rem;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           border: 1px solid;
-          transition: all 0.2s;
-          backdrop-filter: blur(4px);
+          transition: transform 0.2s ease, filter 0.2s ease;
+          white-space: nowrap;
         }
 
         .donor-tier-badge:hover {
-          transform: translateY(-2px);
-          filter: brightness(1.1);
+          transform: translateY(-1px);
+          filter: brightness(1.05);
         }
 
         .edit-profile-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0.625rem 1.5rem;
+          padding: 0.75rem 1.2rem;
           border: 1px solid #3f3f46;
-          border-radius: 0.5rem;
+          border-radius: 0.75rem;
           color: #d4d4d8;
-          font-size: 0.875rem;
+          font-size: clamp(0.75rem, 1vw, 0.95rem);
           font-weight: 500;
           text-decoration: none;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
           background: transparent;
+          flex-shrink: 0;
         }
 
         .edit-profile-btn:hover {
@@ -487,31 +527,32 @@ export default function UserPage() {
           background: rgba(255,255,255,0.05);
         }
 
-        /* Stats Grid */
         .stats-grid {
           display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          gap: 1px;
+          grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+          gap: 0.75rem;
           background: #27272a;
           border-radius: 0.75rem;
           overflow: hidden;
-          margin-bottom: 2.5rem;
+          margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
         }
 
         .stat-item {
           background: #18181b;
-          padding: 1.25rem 1rem;
+          padding: clamp(0.9rem, 1.5vw, 1.25rem);
           display: flex;
           flex-direction: column;
           align-items: center;
           text-align: center;
+          min-width: 0;
         }
 
         .stat-number {
-          font-size: 1.5rem;
+          font-size: clamp(1.25rem, 2vw, 1.75rem);
           font-weight: 700;
           color: #f4f4f5;
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.35rem;
+          word-break: break-word;
         }
 
         .stat-number.accent {
@@ -519,47 +560,47 @@ export default function UserPage() {
         }
 
         .stat-label {
-          font-size: 0.7rem;
+          font-size: 0.75rem;
           text-transform: uppercase;
           letter-spacing: 0.08em;
           color: #71717a;
         }
 
-        @media (max-width: 768px) {
-          .stats-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 480px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr); }
-        }
-
-        /* Main Layout */
         .main-layout {
           display: grid;
-          grid-template-columns: 1fr 280px;
-          gap: 2.5rem;
+          grid-template-columns: 1fr;
+          gap: clamp(1.5rem, 3vw, 2.5rem);
           align-items: start;
+          width: 100%;
+          max-width: 100%;
         }
 
-        @media (max-width: 900px) {
-          .main-layout { grid-template-columns: 1fr; }
+        @media (min-width: 900px) {
+          .main-layout {
+            grid-template-columns: 1fr 300px;
+          }
         }
 
-        /* History Panels */
         .history-panel {
-          margin-bottom: 2.5rem;
+          margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+          overflow-x: hidden;
         }
 
         .panel-header {
           display: flex;
-          align-items: baseline;
+          align-items: center;
           justify-content: space-between;
-          margin-bottom: 1.25rem;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
         }
 
         .panel-title {
-          font-size: 1.125rem;
+          font-size: clamp(1rem, 1.6vw, 1.2rem);
           font-weight: 600;
           color: #e4e4e7;
+          min-width: 0;
+          flex: 1 1 auto;
         }
 
         .panel-link {
@@ -567,45 +608,68 @@ export default function UserPage() {
           color: #a78bfa;
           text-decoration: none;
           font-weight: 500;
-          transition: opacity 0.2s;
+          transition: opacity 0.2s ease;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .history-list {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 0.5rem;
+          width: 100%;
+          overflow-x: hidden;
         }
 
         .history-list.scrollable {
           max-height: 420px;
           overflow-y: auto;
+          overflow-x: hidden;
           padding-right: 4px;
+          width: 100%;
         }
 
         .history-list.scrollable::-webkit-scrollbar {
           width: 4px;
         }
+
         .history-list.scrollable::-webkit-scrollbar-track {
           background: #27272a;
           border-radius: 2px;
         }
+
         .history-list.scrollable::-webkit-scrollbar-thumb {
           background: #52525b;
           border-radius: 2px;
         }
+
         .history-list.scrollable::-webkit-scrollbar-thumb:hover {
           background: #71717a;
         }
 
         .history-row {
-          display: flex;
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
           align-items: center;
-          gap: 1rem;
-          padding: 0.75rem 0.5rem;
-          border-radius: 0.5rem;
+          gap: 0.75rem;
+          padding: 0.85rem 0.75rem;
+          border-radius: 0.75rem;
           text-decoration: none;
           color: inherit;
-          transition: background 0.15s;
+          transition: background 0.15s ease;
+          width: 100%;
+          min-width: 0;
+          overflow: hidden;
+        }
+
+        @media (max-width: 520px) {
+          .history-row {
+            grid-template-columns: auto 1fr;
+          }
+
+          .percentage {
+            justify-self: end;
+          }
         }
 
         .history-row:hover {
@@ -613,9 +677,9 @@ export default function UserPage() {
         }
 
         .thumb {
-          width: 44px;
-          height: 60px;
-          border-radius: 0.375rem;
+          width: clamp(3rem, 8vw, 3.75rem);
+          height: clamp(3.5rem, 9vw, 4.75rem);
+          border-radius: 0.5rem;
           overflow: hidden;
           background: #27272a;
           flex-shrink: 0;
@@ -633,7 +697,6 @@ export default function UserPage() {
         }
 
         .info {
-          flex: 1;
           min-width: 0;
         }
 
@@ -641,19 +704,26 @@ export default function UserPage() {
           font-size: 0.9rem;
           font-weight: 500;
           color: #d4d4d8;
-          white-space: nowrap;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
           text-overflow: ellipsis;
+          word-break: break-word;
+          line-height: 1.3;
           margin-bottom: 0.2rem;
+          max-width: 100%;
         }
 
         .episode {
-          font-size: 0.75rem;
-          color: #52525b;
-          margin-bottom: 0.3rem;
+          font-size: 0.78rem;
+          color: #71717a;
+          margin-bottom: 0.35rem;
         }
 
         .progress-bar {
+          width: 100%;
+          min-width: 0;
           height: 3px;
           background: #27272a;
           border-radius: 2px;
@@ -665,14 +735,16 @@ export default function UserPage() {
           background: #a78bfa;
           border-radius: 2px;
           width: 0%;
+          transition: width 0.4s ease;
         }
 
         .percentage {
           font-size: 0.8rem;
           font-weight: 600;
           color: #a78bfa;
-          width: 36px;
+          min-width: 3rem;
           text-align: right;
+          justify-self: end;
           flex-shrink: 0;
         }
 
@@ -680,39 +752,41 @@ export default function UserPage() {
           padding: 2rem 0;
           text-align: center;
           color: #3f3f46;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
         }
 
         .view-more {
-          margin-top: 12px;
+          margin-top: 0.75rem;
           text-align: center;
-          padding-top: 8px;
+          padding-top: 0.8rem;
           border-top: 1px solid #27272a;
         }
 
         .view-more-link {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          padding: 8px 16px;
-          font-size: 0.8rem;
+          gap: 0.5rem;
+          padding: 0.7rem 1.25rem;
+          font-size: 0.85rem;
           font-weight: 500;
           color: #a78bfa;
           text-decoration: none;
-          transition: all 0.2s;
-          border-radius: 6px;
+          transition: background 0.2s ease, color 0.2s ease;
+          border-radius: 0.75rem;
         }
 
         .view-more-link:hover {
-          background: rgba(167, 139, 250, 0.1);
+          background: rgba(167,139,250,0.1);
           color: #c4b5fd;
         }
 
-        /* Sidebar */
         .sidebar {
           display: flex;
           flex-direction: column;
-          gap: 1.75rem;
+          gap: 1.5rem;
+          width: 100%;
+          max-width: 100%;
+          min-width: 0;
         }
 
         .widget {
@@ -722,22 +796,22 @@ export default function UserPage() {
         }
 
         .widget-label {
-          font-size: 0.65rem;
+          font-size: 0.75rem;
           text-transform: uppercase;
-          letter-spacing: 0.1em;
+          letter-spacing: 0.12em;
           color: #52525b;
           margin-bottom: 1rem;
         }
 
         .email-display {
-          font-size: 0.875rem;
+          font-size: 0.9rem;
           color: #a1a1aa;
-          word-break: break-all;
-          margin-top: 0.25rem;
+          word-break: break-word;
+          margin-top: 0.35rem;
         }
 
         .level-value {
-          font-size: 2.5rem;
+          font-size: clamp(2rem, 5vw, 3rem);
           font-weight: 700;
           color: #f4f4f5;
           line-height: 1;
@@ -751,10 +825,11 @@ export default function UserPage() {
         }
 
         .xp-track {
+          width: 100%;
           height: 4px;
           background: #27272a;
           border-radius: 2px;
-          margin: 0.75rem 0 0.5rem;
+          margin: 0.85rem 0 0.5rem;
           overflow: hidden;
         }
 
@@ -762,11 +837,14 @@ export default function UserPage() {
           height: 100%;
           background: #a78bfa;
           border-radius: 2px;
+          width: 0%;
+          transition: width 0.5s ease;
         }
 
         .xp-caption {
-          font-size: 0.7rem;
-          color: #52525b;
+          font-size: 0.78rem;
+          color: #71717a;
+          line-height: 1.4;
         }
 
         .xp-caption strong {
@@ -895,9 +973,9 @@ export default function UserPage() {
                 <p className="empty-state">No anime watched yet.</p>
               ) : (
                 <div className="history-list scrollable">
-                  {history.map((item) => (
+                  {recentAnimeHistory.map((item) => (
                     <Link
-                      key={`${item.animeId}-${item.currentEp}`}
+                      key={`${item.animeId}-${item.currentEp}-${item.percent ?? 0}`}
                       href={`/anime/${item.animeId}`}
                       className="history-row"
                     >
@@ -930,7 +1008,7 @@ export default function UserPage() {
                 <p className="empty-state">No comics read yet.</p>
               ) : (
                 <div className="history-list scrollable">
-                  {comicHistory.map((item) => (
+                  {recentComicHistory.map((item) => (
                     <Link
                       key={`${item.comicId}-${item.currentChapter}`}
                       href={`/comic/${item.comicId}`}
