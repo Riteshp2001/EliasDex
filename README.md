@@ -29,6 +29,28 @@ The app delivers several main functions:
 - **Support the platform** by donating through a payment gateway
 - **Display leaderboards** and engagement metrics for users
 
+
+<h2 align="center">📱 App Preview</h2>
+
+<p align="center">
+  <img src="https://files.catbox.moe/0v0xza.png" width="220"/>
+  <img src="https://files.catbox.moe/frkka6.png" width="220"/>
+  <img src="https://files.catbox.moe/hhfmaw.png" width="220"/>
+</p>
+
+<p align="center">
+  <img src="https://files.catbox.moe/8mvw1d.png" width="220"/>
+  <img src="https://files.catbox.moe/pomhyx.png" width="220"/>
+  <img src="https://files.catbox.moe/2l2mb8.png" width="220"/>
+</p>
+
+<p align="center">
+  <img src="https://files.catbox.moe/zzbl3k.png" width="220"/>
+  <img src="https://files.catbox.moe/7lnlnt.png" width="220"/>
+  <img src="https://files.catbox.moe/vrhegi.png" width="220"/>
+</p>
+
+
 ## How it works
 
 ### Frontend
@@ -156,23 +178,3 @@ If you want to extend this project, start by exploring:
 ---
 
 Made for a fast, polished anime and manga streaming experience powered by Next.js, React, and Tailwind CSS.
-
-<h2 align="center">📱 App Preview</h2>
-
-<p align="center">
-  <img src="https://files.catbox.moe/0v0xza.png" width="220"/>
-  <img src="https://files.catbox.moe/frkka6.png" width="220"/>
-  <img src="https://files.catbox.moe/hhfmaw.png" width="220"/>
-</p>
-
-<p align="center">
-  <img src="https://files.catbox.moe/8mvw1d.png" width="220"/>
-  <img src="https://files.catbox.moe/pomhyx.png" width="220"/>
-  <img src="https://files.catbox.moe/2l2mb8.png" width="220"/>
-</p>
-
-<p align="center">
-  <img src="https://files.catbox.moe/zzbl3k.png" width="220"/>
-  <img src="https://files.catbox.moe/7lnlnt.png" width="220"/>
-  <img src="https://files.catbox.moe/vrhegi.png" width="220"/>
-</p>
