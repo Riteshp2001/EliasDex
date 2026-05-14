@@ -18,7 +18,7 @@ export const metadata = {
   metadataBase: new URL(baseUrl),
   title: "EliasDex Watch Free Anime, Online Anime Streaming",
   description:
-    "Nonton anime & baca komik gratis di eliasdex! Streaming HD Sub Indo/Dub tanpa iklan. Akses cepat manga & komunitas anime terbaik. Platform karya Irvan Farel Hanafi.",
+    "Nonton anime & baca komik gratis di eliasdex! Streaming HD Sub/Dub tanpa iklan. Akses cepat manga & komunitas anime terbaik. Platform karya Irvan Farel Hanafi.",
   keywords:
     "eliasdex, aniwatch, zorox, zoro anime, zoro to, zoroxtv, watch anime online free, free watch anime, anime online to watch, anime indonesia, anime sub indo, streaming anime gratis, manga online gratis, baca komik, Irvan Farael Hanafi, Farel Hanafi, Irvan Farel, Irvan Farael",
   robots: "index, follow",
@@ -31,7 +31,7 @@ export const metadata = {
   openGraph: {
     title: "EliasDex Watch Free Anime, Online Anime Streaming",
     description:
-      "Nonton anime & baca komik gratis di eliasdex! Streaming HD Sub Indo/Dub tanpa iklan. Akses cepat manga & komunitas anime terbaik. Platform karya Irvan Farel Hanafi.",
+      "Nonton anime & baca komik gratis di eliasdex! Streaming HD Sub/Dub tanpa iklan. Akses cepat manga & komunitas anime terbaik. Platform karya Irvan Farel Hanafi.",
     images: ["/images/preview.jpg"],
     type: "website",
     url: baseUrl,
@@ -42,22 +42,21 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  // Data Terstruktur dalam bentuk Object
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    name: "EliasDex",
-    url: baseUrl,
-    description: "Platform streaming anime dan baca komik gratis.",
-    potentialAction: {
+    "name": "EliasDex",
+    "url": baseUrl,
+    "potentialAction": {
       "@type": "SearchAction",
-      target: `${baseUrl}/search?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
+      "target": `${baseUrl}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string"
     },
-    author: {
+    "author": {
       "@type": "Person",
-      name: "Irvan Farel Hanafi",
-      url: "https://farelhanafi.my.id",
-    },
+      "name": "Irvan Farel Hanafi"
+    }
   };
 
   return (
