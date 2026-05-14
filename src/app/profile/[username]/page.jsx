@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -8,7 +8,7 @@ import Loader from "@/components/Loader";
 import Footer from "@/components/Footer";
 import Image from "next/image";
 
-/* ─── Tier Config Lengkap dengan efek ─── */
+/* ─── Tier Config (tetap sama) ─── */
 const TIER_CONFIG = {
   celestial: {
     label: "Celestial",
@@ -203,8 +203,8 @@ const TIER_CONFIG = {
 const fmt = (n) => (n ?? 0).toLocaleString();
 const fmtDate = (d) => new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 
-/* ─── Sub-components ─── */
-function StatCard({ value, label, accent }) {
+/* ─── Optimized Sub-components (memo) ─── */
+const StatCard = memo(function StatCard({ value, label, accent }) {
   return (
     <div className="pf-stat">
       <span className="pf-stat-val" style={{ color: accent ?? "#e85d5d" }}>
@@ -213,9 +213,9 @@ function StatCard({ value, label, accent }) {
       <span className="pf-stat-lbl">{label}</span>
     </div>
   );
-}
+});
 
-function ActivityRow({ image, title, sub, date, href }) {
+const ActivityRow = memo(function ActivityRow({ image, title, sub, date, href }) {
   return (
     <Link href={href ?? "#"} className="pf-activity-row">
       <div className="pf-activity-thumb">
@@ -232,9 +232,9 @@ function ActivityRow({ image, title, sub, date, href }) {
       <span className="pf-activity-date">{date}</span>
     </Link>
   );
-}
+});
 
-/* ─── Page ─── */
+/* ─── Main Page ─── */
 export default function ProfilePage() {
   const router = useRouter();
   const { username } = useParams();
@@ -260,6 +260,29 @@ export default function ProfilePage() {
     };
     fetchUserProfile();
   }, [username]);
+
+  // Optimasi: memoize activity list
+  const allActivity = useMemo(() => {
+    const animeActivities = (profileUser?.watchHistory || []).slice(0, 5).map((i, idx) => ({
+      key: `anime-${i.animeId}-${idx}-${i.updatedAt}`,
+      image: i.image,
+      title: i.title,
+      sub: `Ep ${i.currentEp} · Anime`,
+      date: fmtDate(i.updatedAt),
+      href: `/anime/${i.animeId}`,
+    }));
+    const comicActivities = (profileUser?.comicHistory || []).slice(0, 5).map((i, idx) => ({
+      key: `comic-${i.comicId || i.title}-${idx}-${i.updatedAt}`,
+      image: i.image,
+      title: i.title,
+      sub: `Ch ${i.currentChapter} · Comic`,
+      date: fmtDate(i.updatedAt),
+      href: `/comic/${i.comicId}`,
+    }));
+    return [...animeActivities, ...comicActivities]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 8);
+  }, [profileUser]);
 
   if (loading) {
     return (
@@ -290,38 +313,24 @@ export default function ProfilePage() {
   const hasGlow = tier?.glow;
   const hasAnimation = tier?.animation ?? false;
 
-  const allActivity = [
-    ...(profileUser.watchHistory?.slice(0, 5).map((i) => ({
-      key: `a-${i.animeId}`,
-      image: i.image,
-      title: i.title,
-      sub: `Ep ${i.currentEp} · Anime`,
-      date: fmtDate(i.updatedAt),
-      href: `/anime/${i.animeId}`,
-    })) ?? []),
-    ...(profileUser.comicHistory?.slice(0, 5).map((i) => ({
-      key: `c-${i.comicId || i.title}`,
-      image: i.image,
-      title: i.title,
-      sub: `Ch ${i.currentChapter} · Comic`,
-      date: fmtDate(i.updatedAt),
-      href: `/comic/${i.comicId}`,
-    })) ?? []),
-  ]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 8);
-
   return (
     <>
       <style>{`
-        /* ── Reset & Base ── */
-        .pf-page { min-height: 100vh; background: #080a0f; color: #e2e8f0; font-family: 'DM Sans', system-ui, sans-serif; }
-        .pf-wrap  { max-width: 860px; margin: 0 auto; padding: 48px 20px 80px; display: flex; flex-direction: column; gap: 20px; }
+        /* ── Reset & Base (Responsive) ── */
+        .pf-page { min-height: 100vh; background: #080a0f; color: #e2e8f0; font-family: 'DM Sans', system-ui, sans-serif; overflow-x: hidden; }
+        .pf-wrap  { 
+          max-width: 860px; 
+          margin: 0 auto; 
+          padding: clamp(24px, 5vw, 48px) clamp(16px, 4vw, 20px) 80px; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 20px; 
+        }
 
         /* Loader / Error */
         .pf-center-screen { min-height: 100vh; background: #080a0f; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px; }
-        .pf-error-code    { font-size: 88px; font-weight: 800; color: #1a1f2e; line-height: 1; letter-spacing: -4px; }
-        .pf-error-title   { font-size: 24px; font-weight: 700; color: #e2e8f0; margin: 0; }
+        .pf-error-code    { font-size: clamp(48px, 15vw, 88px); font-weight: 800; color: #1a1f2e; line-height: 1; letter-spacing: -4px; }
+        .pf-error-title   { font-size: clamp(18px, 5vw, 24px); font-weight: 700; color: #e2e8f0; margin: 0; }
         .pf-error-msg     { font-size: 14px; color: #4a5568; max-width: 320px; }
 
         /* ── Cards ── */
@@ -329,12 +338,13 @@ export default function ProfilePage() {
           background: #0d1117;
           border: 1px solid #1a2030;
           border-radius: 20px;
-          padding: 32px;
+          padding: clamp(20px, 4vw, 32px);
           position: relative;
           overflow: hidden;
           transition: border-color 0.3s;
+          word-break: break-word;
         }
-        .pf-card-sm { padding: 24px 28px; }
+        .pf-card-sm { padding: clamp(20px, 4vw, 28px); }
 
         /* Tier glow border effect */
         .pf-card.tier-glow::before {
@@ -350,17 +360,32 @@ export default function ProfilePage() {
           opacity: 0.7;
         }
 
-        /* ── Profile Hero ── */
-        .pf-hero { display: flex; align-items: flex-start; gap: 28px; }
+        /* ── Profile Hero (Responsive flex) ── */
+        .pf-hero { 
+          display: flex; 
+          align-items: center; 
+          gap: clamp(16px, 5vw, 28px); 
+          flex-wrap: wrap; 
+        }
 
         /* Avatar */
         .pf-avatar-wrap { position: relative; flex-shrink: 0; }
         .pf-avatar-ring {
-          width: 104px; height: 104px; border-radius: 50%;
-          padding: 2.5px; background: var(--tier-bg, #1a2030);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: var(--tier-shadow, none);
+          width: clamp(70px, 18vw, 104px);
+          height: clamp(70px, 18vw, 104px);
+          border-radius: 50%;
+          padding: 2.5px;
+          background: var(--tier-bg, #1a2030);
+          display: flex;
+          align-items: center;
+          justify-content: center;
           transition: all 0.3s;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .pf-avatar-ring.animate { animation: none !important; }
+          .pf-name.donator { animation: none !important; }
+          .pf-level-badge.donator { animation: none !important; }
+          .pf-tier-badge.animate { animation: none !important; }
         }
         .pf-avatar-ring.animate {
           animation: avatarGlow 2s ease-in-out infinite alternate;
@@ -372,25 +397,42 @@ export default function ProfilePage() {
         .pf-avatar-inner {
           width: 100%; height: 100%; border-radius: 50%;
           background: #111827; overflow: hidden;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 36px; font-weight: 800; color: #e85d5d;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: clamp(24px, 6vw, 36px);
+          font-weight: 800;
+          color: #e85d5d;
+          position: relative;
         }
         .pf-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
         .pf-tier-pip {
           position: absolute; bottom: 2px; right: 2px;
-          width: 28px; height: 28px; border-radius: 50%;
+          width: clamp(24px, 6vw, 28px);
+          height: clamp(24px, 6vw, 28px);
+          border-radius: 50%;
           background: var(--tier-bg); border: 2px solid #080a0f;
           display: flex; align-items: center; justify-content: center;
-          font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+          font-size: clamp(11px, 3vw, 13px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
           transition: transform 0.2s;
         }
         .pf-tier-pip:hover { transform: scale(1.1); }
 
         /* User info */
-        .pf-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-        .pf-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .pf-info { 
+          flex: 1; 
+          min-width: 180px; 
+          display: flex; 
+          flex-direction: column; 
+          gap: clamp(10px, 2vw, 12px); 
+        }
+        .pf-name-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
         .pf-name {
-          font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1;
+          font-size: clamp(22px, 6vw, 26px);
+          font-weight: 800;
+          letter-spacing: -0.5px;
+          line-height: 1.1;
         }
         .pf-name.donator {
           background: var(--name-grad);
@@ -426,7 +468,13 @@ export default function ProfilePage() {
           0% { box-shadow: 0 0 2px var(--tier-color); }
           100% { box-shadow: 0 0 12px var(--tier-color); }
         }
-        .pf-username { font-size: 13px; color: #3a4a60; font-weight: 500; margin-top: 2px; }
+        .pf-username { 
+          font-size: 13px; 
+          color: #3a4a60; 
+          font-weight: 500; 
+          margin-top: 2px; 
+          word-break: break-all;
+        }
 
         /* Tier badge */
         .pf-tier-badge {
@@ -447,53 +495,66 @@ export default function ProfilePage() {
         }
         .pf-tier-badge-icon { font-size: 12px; }
 
-        /* Stats */
-        .pf-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        /* Stats Grid Responsive */
+        .pf-stats { 
+          display: grid; 
+          grid-template-columns: repeat(4, 1fr); 
+          gap: 10px; 
+        }
+        @media (max-width: 600px) {
+          .pf-stats { grid-template-columns: repeat(2, 1fr); }
+        }
         .pf-stat {
           background: #080c14; border: 1px solid #141c28;
-          border-radius: 14px; padding: 12px 10px;
+          border-radius: 14px; padding: 12px 8px;
           display: flex; flex-direction: column; align-items: center; gap: 4px;
           transition: border-color 0.2s;
+          text-align: center;
         }
-        .pf-stat:hover { border-color: #1e2840; }
-        .pf-stat-val { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
-        .pf-stat-lbl { font-size: 10px; color: #3a4a60; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; text-align: center; }
+        .pf-stat-val { font-size: clamp(16px, 5vw, 20px); font-weight: 800; line-height: 1; }
+        .pf-stat-lbl { font-size: 10px; color: #3a4a60; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
 
         /* Actions */
-        .pf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-
-        .pf-btn-primary {
+        .pf-actions { 
+          display: flex; 
+          flex-wrap: wrap; 
+          gap: 8px; 
+          align-items: center;
+        }
+        .pf-btn-primary, .pf-btn-outline, .pf-btn-donate {
           display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 20px; border-radius: 10px;
-          background: #e85d5d; color: #fff;
+          padding: 9px 18px; border-radius: 10px;
           font-size: 13px; font-weight: 700;
-          border: none; cursor: pointer; text-decoration: none;
-          transition: background 0.2s, transform 0.15s;
+          text-decoration: none;
+          cursor: pointer;
+          transition: background 0.2s, transform 0.15s, border-color 0.2s;
+          white-space: nowrap;
+        }
+        @media (max-width: 480px) {
+          .pf-btn-primary, .pf-btn-outline, .pf-btn-donate {
+            padding: 8px 14px;
+            font-size: 12px;
+            white-space: normal;
+            text-align: center;
+          }
+        }
+        .pf-btn-primary {
+          background: #e85d5d; color: #fff;
+          border: none;
         }
         .pf-btn-primary:hover { background: #d44f4f; transform: translateY(-1px); }
-
         .pf-btn-outline {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 20px; border-radius: 10px;
           background: transparent; color: #6b7a94;
-          font-size: 13px; font-weight: 600;
-          border: 1px solid #1a2030; cursor: pointer; text-decoration: none;
-          transition: border-color 0.2s, color 0.2s, transform 0.15s;
+          border: 1px solid #1a2030;
         }
         .pf-btn-outline:hover { border-color: #2a3450; color: #c8d2e4; transform: translateY(-1px); }
-
         .pf-btn-donate {
-          display: inline-flex; align-items: center; gap: 6px;
-          padding: 9px 20px; border-radius: 10px;
           background: transparent;
-          font-size: 13px; font-weight: 700;
           border: 1px solid rgba(248,200,80,0.25); color: #f8c850;
-          cursor: pointer; text-decoration: none;
-          transition: background 0.2s, transform 0.15s;
         }
         .pf-btn-donate:hover { background: rgba(248,200,80,0.08); transform: translateY(-1px); }
 
-        /* ── Section headings ── */
+        /* Section headings */
         .pf-section-head {
           font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
           text-transform: uppercase; color: #2a3450;
@@ -501,14 +562,14 @@ export default function ProfilePage() {
         }
         .pf-section-head::after { content: ''; flex: 1; height: 1px; background: #111827; }
 
-        /* ── Bio ── */
-        .pf-bio { font-size: 14px; color: #7a8fa8; line-height: 1.7; }
+        /* Bio */
+        .pf-bio { font-size: 14px; color: #7a8fa8; line-height: 1.7; word-break: break-word; }
 
-        /* ── Activity ── */
+        /* Activity List Responsive */
         .pf-activity-list { display: flex; flex-direction: column; gap: 2px; }
         .pf-activity-row {
-          display: flex; align-items: center; gap: 14px;
-          padding: 12px 14px; border-radius: 12px;
+          display: flex; align-items: center; gap: 12px;
+          padding: 12px 10px; border-radius: 12px;
           text-decoration: none; color: inherit;
           transition: background 0.15s;
         }
@@ -521,15 +582,24 @@ export default function ProfilePage() {
         .pf-activity-img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .pf-activity-placeholder { font-size: 18px; color: #2a3450; }
         .pf-activity-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-        .pf-activity-title { font-size: 13px; font-weight: 600; color: #c8d2e4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .pf-activity-title { 
+          font-size: 13px; font-weight: 600; color: #c8d2e4; 
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
         .pf-activity-sub   { font-size: 11px; color: #3a4a60; }
-        .pf-activity-date  { font-size: 11px; color: #2a3450; white-space: nowrap; flex-shrink: 0; }
+        .pf-activity-date  { 
+          font-size: 11px; color: #2a3450; white-space: nowrap; flex-shrink: 0; 
+        }
+        @media (max-width: 560px) {
+          .pf-activity-date { display: none; }
+          .pf-activity-row { gap: 8px; }
+        }
         .pf-activity-empty { text-align: center; padding: 40px 0; font-size: 13px; color: #2a3450; }
       `}</style>
 
       <div className="pf-page">
         <div className="pf-wrap">
-          {/* ── Hero Card ── */}
+          {/* Hero Card */}
           <div
             className={`pf-card${tier ? " tier-glow" : ""}`}
             style={{
@@ -550,8 +620,14 @@ export default function ProfilePage() {
                   }}
                 >
                   <div className="pf-avatar-inner">
-                    {typeof profileUser.profileImage === "string" && profileUser.profileImage.trim() !== "" ? (
-                      <Image src={profileUser.profileImage} alt={profileUser.name} width={40} height={40} unoptimized />
+                    {profileUser.profileImage && profileUser.profileImage.trim() !== "" ? (
+                      <Image 
+                        src={profileUser.profileImage} 
+                        alt={profileUser.name} 
+                        fill
+                        sizes="(max-width: 104px) 70px, 104px"
+                        style={{ objectFit: "cover" }}
+                      />
                     ) : (
                       (profileUser.name?.charAt(0)?.toUpperCase() ?? "U")
                     )}
@@ -620,9 +696,6 @@ export default function ProfilePage() {
                     </>
                   ) : (
                     <>
-                      {/* <Link href={`/message/${profileUser.username}`} className="pf-btn-primary">
-                        💬 Message
-                      </Link> */}
                       <button onClick={() => router.back()} className="pf-btn-outline">
                         ← Back
                       </button>
@@ -633,7 +706,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* ── Bio ── */}
+          {/* Bio */}
           {profileUser.bio && (
             <div className="pf-card pf-card-sm">
               <p className="pf-section-head">About</p>
@@ -641,21 +714,21 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* ── Recent Activity ── */}
-          <div className="pf-card pf-card-sm">
-            <p className="pf-section-head">Recent Activity</p>
-            {allActivity.length > 0 ? (
-              <div className="pf-activity-list">
-                {allActivity.map(({ key, ...restOfItem }) => (
-                  <ActivityRow key={key} {...restOfItem} />
-                ))}
-              </div>
-            ) : (
-              <p className="pf-activity-empty">
-                {isOwn ? "Nothing here yet — start watching!" : `${profileUser.name} hasn't been active yet.`}
-              </p>
-            )}
-          </div>
+          {/* Recent Activity */}
+<div className="pf-card pf-card-sm">
+  <p className="pf-section-head">Recent Activity</p>
+  {allActivity.length > 0 ? (
+    <div className="pf-activity-list">
+      {allActivity.map(({ key, ...itemProps }) => (
+        <ActivityRow key={key} {...itemProps} />
+      ))}
+    </div>
+  ) : (
+    <p className="pf-activity-empty">
+      {isOwn ? "Nothing here yet — start watching!" : `${profileUser.name} hasn't been active yet.`}
+    </p>
+  )}
+</div>
         </div>
         <Footer />
       </div>

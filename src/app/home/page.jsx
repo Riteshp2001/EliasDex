@@ -19,6 +19,8 @@ import {
 import Head from "next/head";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import AnimeCard from "@/components/AnimeCard";
+import Pagination from "@/components/Pagination";
 
 /* ═══════════════════════════════════════════════════════════
    JIKAN API QUEUE — solves the rate-limit / inconsistency bug.
@@ -277,7 +279,7 @@ const ScheduleCard = ({ item }) => (
         fill
         sizes="(max-width: 640px) 48px, 56px"
         className="object-cover transition-transform duration-300 group-hover:scale-105"
-        style={{ willChange: 'transform' }}
+        style={{ willChange: "transform" }}
         loading="lazy"
         onError={(e) => {
           e.currentTarget.src = "/placeholder.jpg";
@@ -381,6 +383,15 @@ const Home = () => {
   } = useJikan(`/schedules?filter=${selectedDay}&limit=14`);
   const scheduleAnime = scheduleData?.data || [];
 
+  /* ── NEW: Top Airing by Score (paginated) ── */
+  const [topScorePage, setTopScorePage] = useState(1);
+  const {
+    data: topScoreData,
+    loading: topScoreLoading,
+    error: topScoreError,
+    retry: retryTopScore,
+  } = useJikan(`/top/anime?filter=airing&sfw=true&order_by=score&type=tv&page=${topScorePage}`);
+
   const getYear = (aired) => aired?.prop?.from?.year || "TBA";
 
   return (
@@ -422,7 +433,7 @@ const Home = () => {
               fill
               priority
               className="w-full h-full object-cover object-top"
-              style={{ willChange: 'auto' }}
+              style={{ willChange: "auto" }}
               onError={(e) => {
                 e.currentTarget.src = "/placeholder.jpg";
               }}
@@ -486,7 +497,7 @@ const Home = () => {
                   <Link
                     href={`/anime/${spotlightList[safeIndex]?.mal_id}`}
                     className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl transition-all duration-200 shadow-lg shadow-violet-900/50 hover:shadow-violet-700/50 hover:scale-[1.02] text-xs sm:text-sm"
-                    style={{ willChange: 'transform' }}
+                    style={{ willChange: "transform" }}
                   >
                     <FaPlay size={10} /> Watch Now
                   </Link>
@@ -649,6 +660,56 @@ const Home = () => {
             </div>
           )}
         </div>
+      </section>
+
+      {/* ══════════════ TOP AIRING BY SCORE (PAGINATED) ══════════════ */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-10 sm:py-12">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-black mb-5 sm:mb-6 tracking-tight flex items-center gap-2">
+          <FaStar className="text-yellow-400 shrink-0" />
+          <span>Top Airing by Score</span>
+        </h2>
+
+        {/* Loading state */}
+        {topScoreLoading && (
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="animate-pulse bg-white/[0.04] rounded-2xl h-64" />
+            ))}
+          </div>
+        )}
+
+        {/* Error state */}
+        {topScoreError && !topScoreLoading && (
+          <ErrorBanner message="Failed to load top anime by score." onRetry={retryTopScore} />
+        )}
+
+        {/* Data loaded */}
+        {!topScoreLoading && !topScoreError && topScoreData?.data?.length > 0 && (
+          <>
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {topScoreData.data
+                .filter((anime, index, self) => self.findIndex((a) => a.mal_id === anime.mal_id) === index)
+                .map((item) => (
+                  <AnimeCard key={item.mal_id} alt={item.title} data={item} />
+                ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <Pagination
+                currentPage={topScoreData.pagination?.current_page}
+                totalPages={topScoreData.pagination?.last_visible_page}
+                onChange={(newPage) => {
+                  setTopScorePage(newPage);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* No results */}
+        {!topScoreLoading && !topScoreError && (!topScoreData?.data || topScoreData.data.length === 0) && (
+          <div className="text-center py-12 text-white/30 text-sm">No anime found.</div>
+        )}
       </section>
 
       <Footer />

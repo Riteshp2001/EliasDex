@@ -1,28 +1,42 @@
 // src/app/page.js
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import {
-  FaArrowCircleRight, FaSearch, FaFilm, FaBookOpen,
-  FaServer, FaMobileAlt, FaFire, FaDiscord,
-  FaTwitter, FaReddit, FaStar, FaPlay, FaChevronRight,
-  FaCheck, FaUsers, FaGlobe, FaShieldAlt
-} from 'react-icons/fa';
-import { MdHighQuality, MdOutlineUpdate } from 'react-icons/md';
-import { HiOutlineLibrary, HiOutlineSparkles } from 'react-icons/hi';
-import { useApi } from '@/services/useApi';
-import Loader from '@/components/Loader';
-import Logo from '@/components/Logo';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+  FaArrowCircleRight,
+  FaSearch,
+  FaFilm,
+  FaBookOpen,
+  FaServer,
+  FaMobileAlt,
+  FaFire,
+  FaDiscord,
+  FaTwitter,
+  FaReddit,
+  FaStar,
+  FaPlay,
+  FaChevronRight,
+  FaCheck,
+  FaUsers,
+  FaGlobe,
+  FaShieldAlt,
+} from "react-icons/fa";
+import { MdHighQuality, MdOutlineUpdate } from "react-icons/md";
+import { HiOutlineLibrary, HiOutlineSparkles } from "react-icons/hi";
+import { useApi } from "@/services/useApi";
+import Loader from "@/components/Loader";
+import Logo from "@/components/Logo";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import AnimeCard from "@/components/AnimeCard";
 
 /* ─── Inline card component to fix the recommendation bug ─── */
-function MediaCard({ item, type = 'anime' }) {
-  const href = type === 'manga' ? `/comic/${item.mal_id}` : `/anime/${item.mal_id}`;
-  const imageUrl = item.images?.jpg?.image_url || item.images?.webp?.image_url || '/images/placeholder.jpg';
+function MediaCard({ item, type = "anime" }) {
+  const href = type === "manga" ? `/comic/${item.mal_id}` : `/anime/${item.mal_id}`;
+  const imageUrl = item.images?.jpg?.image_url || item.images?.webp?.image_url || "/images/placeholder.jpg";
 
   return (
     <Link href={href} className="media-card group">
@@ -33,23 +47,21 @@ function MediaCard({ item, type = 'anime' }) {
           fill
           sizes="(max-width: 768px) 50vw, 25vw"
           className="media-card__img"
-          style={{ objectFit: 'cover' }}
+          style={{ objectFit: "cover" }}
         />
         <div className="media-card__overlay">
-          <div className="media-card__play">
-            {type === 'anime' ? <FaPlay /> : <FaBookOpen />}
-          </div>
+          <div className="media-card__play">{type === "anime" ? <FaPlay /> : <FaBookOpen />}</div>
         </div>
         {item.score && (
           <div className="media-card__score">
-            <FaStar className="inline text-amber-400 mr-1" style={{ fontSize: '0.65rem' }} />
+            <FaStar className="inline text-amber-400 mr-1" style={{ fontSize: "0.65rem" }} />
             {item.score}
           </div>
         )}
       </div>
       <div className="media-card__info">
         <p className="media-card__title">{item.title}</p>
-        <span className="media-card__type">{type === 'manga' ? 'Manga' : 'Anime'}</span>
+        <span className="media-card__type">{type === "manga" ? "Manga" : "Anime"}</span>
       </div>
     </Link>
   );
@@ -57,162 +69,175 @@ function MediaCard({ item, type = 'anime' }) {
 
 /* ─── Stats ─── */
 const stats = [
-  { value: '10K+', label: 'Anime Episodes' },
-  { value: '50K+', label: 'Manga Chapters' },
-  { value: '500K+', label: 'Active Fans' },
-  { value: '99.9%', label: 'Uptime' },
+  { value: "10K+", label: "Anime Episodes" },
+  { value: "50K+", label: "Manga Chapters" },
+  { value: "500K+", label: "Active Fans" },
+  { value: "99.9%", label: "Uptime" },
 ];
 
 /* ─── Features ─── */
 const features = [
   {
     icon: <FaFilm />,
-    title: 'HD Anime Streaming',
-    description: 'Enjoy crystal-clear 1080p and 4K streaming with adaptive bitrate. No buffering, no interruptions — just pure anime.',
-    badge: 'Popular',
+    title: "HD Anime Streaming",
+    description:
+      "Enjoy crystal-clear 1080p and 4K streaming with adaptive bitrate. No buffering, no interruptions — just pure anime.",
+    badge: "Popular",
   },
   {
     icon: <FaBookOpen />,
-    title: 'Manga Library',
-    description: 'Browse thousands of manga titles across every genre. Our reader is optimized for mobile and desktop alike.',
+    title: "Manga Library",
+    description:
+      "Browse thousands of manga titles across every genre. Our reader is optimized for mobile and desktop alike.",
     badge: null,
   },
   {
     icon: <MdHighQuality />,
-    title: 'Crystal Clear Quality',
-    description: 'From 480p to 4K Ultra HD — choose the quality that fits your connection. Subtitles available in multiple languages.',
-    badge: '4K',
+    title: "Crystal Clear Quality",
+    description:
+      "From 480p to 4K Ultra HD — choose the quality that fits your connection. Subtitles available in multiple languages.",
+    badge: "4K",
   },
   {
     icon: <FaServer />,
-    title: 'Lightning Fast Servers',
-    description: 'Globally distributed CDN ensures your content loads instantly, no matter where you are on the planet.',
+    title: "Lightning Fast Servers",
+    description:
+      "Globally distributed CDN ensures your content loads instantly, no matter where you are on the planet.",
     badge: null,
   },
   {
     icon: <FaMobileAlt />,
-    title: 'Any Device, Anywhere',
-    description: 'Fully responsive on phone, tablet, or desktop. Your watchlist syncs across all your devices seamlessly.',
+    title: "Any Device, Anywhere",
+    description:
+      "Fully responsive on phone, tablet, or desktop. Your watchlist syncs across all your devices seamlessly.",
     badge: null,
   },
   {
     icon: <HiOutlineLibrary />,
-    title: 'Massive Collection',
-    description: 'New episodes and chapters added daily. From classic hits to the latest seasonal releases — we have it all.',
-    badge: 'Daily Updates',
+    title: "Massive Collection",
+    description:
+      "New episodes and chapters added daily. From classic hits to the latest seasonal releases — we have it all.",
+    badge: "Daily Updates",
   },
   {
     icon: <FaShieldAlt />,
-    title: 'Safe & Ad-Free',
-    description: 'No intrusive ads, no malware, no tracking. Just a clean, safe environment to enjoy your favorite content.',
+    title: "Safe & Ad-Free",
+    description:
+      "No intrusive ads, no malware, no tracking. Just a clean, safe environment to enjoy your favorite content.",
     badge: null,
   },
   {
     icon: <HiOutlineSparkles />,
-    title: 'Smart Recommendations',
-    description: 'Our AI-powered recommendation engine learns your taste and surfaces hidden gems you will absolutely love.',
-    badge: 'AI Powered',
+    title: "Smart Recommendations",
+    description:
+      "Our AI-powered recommendation engine learns your taste and surfaces hidden gems you will absolutely love.",
+    badge: "AI Powered",
   },
   {
     icon: <MdOutlineUpdate />,
-    title: 'Always Updated',
-    description: 'Simulcast support means the newest episode is available within minutes of its original airing in Japan.',
+    title: "Always Updated",
+    description:
+      "Simulcast support means the newest episode is available within minutes of its original airing in Japan.",
     badge: null,
   },
 ];
 
 /* ─── Community perks ─── */
 const communityPerks = [
-  'Join 500,000+ fans in real-time discussions',
-  'Early access to seasonal anime previews',
-  'Weekly watchlist recommendations from mods',
-  'Fan art showcases and community events',
-  'Polls, quizzes, and tournament brackets',
-  'Direct feedback channel to our dev team',
+  "Join 500,000+ fans in real-time discussions",
+  "Early access to seasonal anime previews",
+  "Weekly watchlist recommendations from mods",
+  "Fan art showcases and community events",
+  "Polls, quizzes, and tournament brackets",
+  "Direct feedback channel to our dev team",
 ];
 
 /* ─── Genres ─── */
 const genres = [
-  { id: 1,  name: 'Action',       emoji: '⚔️',  count: '2,400+' },
-  { id: 22, name: 'Romance',      emoji: '💕',  count: '1,800+' },
-  { id: 62, name: 'Isekai',       emoji: '🌀',  count: '950+'  },
-  { id: 14, name: 'Horror',       emoji: '👻',  count: '620+'  },
-  { id: 18, name: 'Mecha',        emoji: '🤖',  count: '480+'  },
-  { id: 30, name: 'Sports',       emoji: '🏆',  count: '530+'  },
-  { id: 10, name: 'Fantasy',      emoji: '🧙',  count: '1,200+' },
-  { id: 36, name: 'Slice of Life',emoji: '🌸',  count: '1,100+' },
-  { id: 41, name: 'Thriller',     emoji: '🔪',  count: '390+'  },
-  { id: 4,  name: 'Comedy',       emoji: '😂',  count: '1,600+' },
-  { id: 24, name: 'Sci-Fi',       emoji: '🚀',  count: '710+'  },
-  { id: 7,  name: 'Mystery',      emoji: '🔍',  count: '440+'  },
+  { id: 1, name: "Action", emoji: "⚔️", count: "2,400+" },
+  { id: 22, name: "Romance", emoji: "💕", count: "1,800+" },
+  { id: 62, name: "Isekai", emoji: "🌀", count: "950+" },
+  { id: 14, name: "Horror", emoji: "👻", count: "620+" },
+  { id: 18, name: "Mecha", emoji: "🤖", count: "480+" },
+  { id: 30, name: "Sports", emoji: "🏆", count: "530+" },
+  { id: 10, name: "Fantasy", emoji: "🧙", count: "1,200+" },
+  { id: 36, name: "Slice of Life", emoji: "🌸", count: "1,100+" },
+  { id: 41, name: "Thriller", emoji: "🔪", count: "390+" },
+  { id: 4, name: "Comedy", emoji: "😂", count: "1,600+" },
+  { id: 24, name: "Sci-Fi", emoji: "🚀", count: "710+" },
+  { id: 7, name: "Mystery", emoji: "🔍", count: "440+" },
 ];
 
 /* ─── How It Works ─── */
 const howItWorks = [
   {
-    step: '01',
-    title: 'Search or Browse',
-    description: 'Use the search bar to find any specific anime or manga title instantly, or browse by genre, season, or trending charts.',
+    step: "01",
+    title: "Search or Browse",
+    description:
+      "Use the search bar to find any specific anime or manga title instantly, or browse by genre, season, or trending charts.",
   },
   {
-    step: '02',
-    title: 'Pick an Episode or Chapter',
-    description: 'Select from a full episode list or chapter index. Sub and dub options are clearly labeled so you always watch your preferred version.',
+    step: "02",
+    title: "Pick an Episode or Chapter",
+    description:
+      "Select from a full episode list or chapter index. Sub and dub options are clearly labeled so you always watch your preferred version.",
   },
   {
-    step: '03',
-    title: 'Choose Your Quality',
-    description: 'Stream in up to 4K Ultra HD or dial down the resolution for slower connections. Change server with one click if needed.',
+    step: "03",
+    title: "Choose Your Quality",
+    description:
+      "Stream in up to 4K Ultra HD or dial down the resolution for slower connections. Change server with one click if needed.",
   },
   {
-    step: '04',
-    title: 'Enjoy — No Sign-Up Needed',
-    description: 'Just hit play. No account, no credit card, no waiting. Create a free account only if you want to save your watchlist and progress.',
+    step: "04",
+    title: "Enjoy — No Sign-Up Needed",
+    description:
+      "Just hit play. No account, no credit card, no waiting. Create a free account only if you want to save your watchlist and progress.",
   },
 ];
 
 /* ─── Testimonials ─── */
 const testimonials = [
   {
-    name: 'Ryo K.',
-    avatar: 'RK',
-    country: '🇯🇵 Japan',
-    text: 'The fastest site I\'ve ever used. New episodes are up within minutes of airing. The 4K quality on my TV is absolutely stunning — exactly what anime deserves.',
+    name: "Ryo K.",
+    avatar: "RK",
+    country: "🇯🇵 Japan",
+    text: "The fastest site I've ever used. New episodes are up within minutes of airing. The 4K quality on my TV is absolutely stunning — exactly what anime deserves.",
     rating: 5,
   },
   {
-    name: 'María G.',
-    avatar: 'MG',
-    country: '🇲🇽 Mexico',
-    text: 'I\'ve tried dozens of streaming sites and this is the only one that actually works on mobile without constant buffering or annoying pop-ups. My go-to for everything.',
+    name: "María G.",
+    avatar: "MG",
+    country: "🇲🇽 Mexico",
+    text: "I've tried dozens of streaming sites and this is the only one that actually works on mobile without constant buffering or annoying pop-ups. My go-to for everything.",
     rating: 5,
   },
   {
-    name: 'Liam T.',
-    avatar: 'LT',
-    country: '🇬🇧 UK',
-    text: 'The manga reader is incredibly smooth. Night mode, page flip animations, and it remembers exactly where I left off. Better than most paid apps honestly.',
+    name: "Liam T.",
+    avatar: "LT",
+    country: "🇬🇧 UK",
+    text: "The manga reader is incredibly smooth. Night mode, page flip animations, and it remembers exactly where I left off. Better than most paid apps honestly.",
     rating: 5,
   },
   {
-    name: 'Aisha B.',
-    avatar: 'AB',
-    country: '🇳🇬 Nigeria',
-    text: 'Finally a platform that works well even on a 3G connection. The adaptive quality is a game changer. I can watch anywhere without worrying about data.',
+    name: "Aisha B.",
+    avatar: "AB",
+    country: "🇳🇬 Nigeria",
+    text: "Finally a platform that works well even on a 3G connection. The adaptive quality is a game changer. I can watch anywhere without worrying about data.",
     rating: 5,
   },
   {
-    name: 'Chen W.',
-    avatar: 'CW',
-    country: '🇸🇬 Singapore',
-    text: 'The AI recommendations actually work. It found shows I\'ve never heard of that I now absolutely love. The community Discord is super active and welcoming too.',
+    name: "Chen W.",
+    avatar: "CW",
+    country: "🇸🇬 Singapore",
+    text: "The AI recommendations actually work. It found shows I've never heard of that I now absolutely love. The community Discord is super active and welcoming too.",
     rating: 5,
   },
   {
-    name: 'Priya S.',
-    avatar: 'PS',
-    country: '🇮🇳 India',
-    text: 'Both sub and dub for almost everything — that\'s rare. The clean interface makes it so easy to navigate. I\'ve converted all my friends to this platform.',
+    name: "Priya S.",
+    avatar: "PS",
+    country: "🇮🇳 India",
+    text: "Both sub and dub for almost everything — that's rare. The clean interface makes it so easy to navigate. I've converted all my friends to this platform.",
     rating: 5,
   },
 ];
@@ -220,41 +245,41 @@ const testimonials = [
 /* ─── FAQ ─── */
 const faqs = [
   {
-    q: 'Is EliasDex completely free to use?',
-    a: 'Yes, 100% free. You can watch anime and read manga without ever entering a credit card or creating an account. A free account is optional and only needed if you want to save your watchlist and sync progress across devices.',
+    q: "Is EliasDex completely free to use?",
+    a: "Yes, 100% free. You can watch anime and read manga without ever entering a credit card or creating an account. A free account is optional and only needed if you want to save your watchlist and sync progress across devices.",
   },
   {
-    q: 'Do I need to register to watch?',
-    a: 'No registration required. Just visit the site, find what you want to watch, and hit play. Creating a free account is optional but unlocks features like a personal watchlist, reading history, and cross-device sync.',
+    q: "Do I need to register to watch?",
+    a: "No registration required. Just visit the site, find what you want to watch, and hit play. Creating a free account is optional but unlocks features like a personal watchlist, reading history, and cross-device sync.",
   },
   {
-    q: 'What video quality is available?',
-    a: 'We offer a full range from 360p all the way up to 4K Ultra HD, depending on the title. Our adaptive bitrate system automatically selects the best quality for your connection, but you can always override it manually.',
+    q: "What video quality is available?",
+    a: "We offer a full range from 360p all the way up to 4K Ultra HD, depending on the title. Our adaptive bitrate system automatically selects the best quality for your connection, but you can always override it manually.",
   },
   {
-    q: 'How quickly are new episodes added?',
-    a: 'Our system is fully automated to scan for new content the moment it airs. Most simulcast episodes are available within minutes of their original Japanese broadcast — often before the episode trends on social media.',
+    q: "How quickly are new episodes added?",
+    a: "Our system is fully automated to scan for new content the moment it airs. Most simulcast episodes are available within minutes of their original Japanese broadcast — often before the episode trends on social media.",
   },
   {
-    q: 'Is the site safe to use?',
-    a: 'Absolutely. We do not use malicious pop-ups, auto-redirect ads, or any tracking scripts beyond basic analytics. Our team actively monitors the platform and our community can flag any issues directly through the report button on every page.',
+    q: "Is the site safe to use?",
+    a: "Absolutely. We do not use malicious pop-ups, auto-redirect ads, or any tracking scripts beyond basic analytics. Our team actively monitors the platform and our community can flag any issues directly through the report button on every page.",
   },
   {
-    q: 'Can I watch on my phone or TV?',
-    a: 'Yes. EliasDex is fully responsive and works on any device — smartphones, tablets, laptops, desktops, and Smart TVs via the built-in browser. No app download needed; everything runs in your browser.',
+    q: "Can I watch on my phone or TV?",
+    a: "Yes. EliasDex is fully responsive and works on any device — smartphones, tablets, laptops, desktops, and Smart TVs via the built-in browser. No app download needed; everything runs in your browser.",
   },
   {
-    q: 'Are both sub and dub versions available?',
-    a: 'For the vast majority of titles, yes. Sub (original Japanese audio with subtitles) and dub (English voice-over) are both available and clearly labeled. You can switch between them at any time on the episode page.',
+    q: "Are both sub and dub versions available?",
+    a: "For the vast majority of titles, yes. Sub (original Japanese audio with subtitles) and dub (English voice-over) are both available and clearly labeled. You can switch between them at any time on the episode page.",
   },
   {
-    q: 'What should I do if a video is not loading?',
-    a: 'Try switching to a different server — you\'ll find server options right below the video player. If the issue persists, use the report button on the episode page and our team will investigate it quickly.',
+    q: "What should I do if a video is not loading?",
+    a: "Try switching to a different server — you'll find server options right below the video player. If the issue persists, use the report button on the episode page and our team will investigate it quickly.",
   },
 ];
 
 export default function RootPage() {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState("");
   const [openFaq, setOpenFaq] = useState(null);
   const router = useRouter();
 
@@ -264,18 +289,22 @@ export default function RootPage() {
     if (value.trim()) router.push(`/search?keyword=${encodeURIComponent(value)}`);
   };
 
-  const { data: animeRecData, isLoading: animeLoading, isError: animeError } = useApi('/recommendations/anime');
-  const trendingAnime = animeRecData?.data
-    ?.flatMap((rec) => rec.entry)
-    .filter((item, index, self) => self.findIndex((i) => i.mal_id === item.mal_id) === index)
-    .slice(0, 8) || [];
+  const {
+    data: animeRecData,
+    isLoading: animeLoading,
+    isError: animeError,
+  } = useApi("/top/anime?filter=airing&sfw=true&order_by=score&type=tv");
+  const trendingAnime =
+    animeRecData?.data
+      ?.filter((item, index, self) => self.findIndex((a) => a.mal_id === item.mal_id) === index)
+      .slice(0, 8) || [];
 
-  const { data: mangaRecData, isLoading: mangaLoading, isError: mangaError } = useApi('/recommendations/manga');
-  const popularManga = mangaRecData?.data
-    ?.flatMap((rec) => rec.entry)
-    .filter((item, index, self) => self.findIndex((i) => i.mal_id === item.mal_id) === index)
-    .slice(0, 8) || [];
-
+  const { data: mangaRecData, isLoading: mangaLoading, isError: mangaError } = useApi("/recommendations/manga");
+  const popularManga =
+    mangaRecData?.data
+      ?.flatMap((rec) => rec.entry)
+      .filter((item, index, self) => self.findIndex((i) => i.mal_id === item.mal_id) === index)
+      .slice(0, 8) || [];
   return (
     <div className="ed-root">
       {/* <Navbar /> */}
@@ -297,13 +326,15 @@ export default function RootPage() {
               <Logo />
             </div>
             <h1 className="ed-hero__title">
-              Stream Anime &amp;<br />
-              <span className="ed-highlight">Read Manga</span><br />
+              Stream Anime &amp;
+              <br />
+              <span className="ed-highlight">Read Manga</span>
+              <br />
               All in One Place
             </h1>
             <p className="ed-hero__sub">
-              Discover thousands of anime episodes and manga chapters.
-              Watch in HD, read online, and track your favorites — completely free.
+              Discover thousands of anime episodes and manga chapters. Watch in HD, read online, and track your
+              favorites — completely free.
             </p>
 
             {/* Search */}
@@ -366,7 +397,8 @@ export default function RootPage() {
           <div className="ed-section__header">
             <span className="ed-eyebrow">Why EliasDex?</span>
             <h2 id="features-heading" className="ed-section__title">
-              Everything You Need for the<br />
+              Everything You Need for the
+              <br />
               <span className="ed-highlight">Ultimate Experience</span>
             </h2>
             <p className="ed-section__sub">
@@ -377,7 +409,9 @@ export default function RootPage() {
           <div className="ed-features-grid">
             {features.map((f, i) => (
               <article key={i} className="ed-feature-card">
-                <div className="ed-feature-card__icon" aria-hidden="true">{f.icon}</div>
+                <div className="ed-feature-card__icon" aria-hidden="true">
+                  {f.icon}
+                </div>
                 {f.badge && <span className="ed-badge ed-badge--sm ed-badge--amber mb-2">{f.badge}</span>}
                 <h3 className="ed-feature-card__title">{f.title}</h3>
                 <p className="ed-feature-card__desc">{f.description}</p>
@@ -404,20 +438,10 @@ export default function RootPage() {
             </Link>
           </div>
 
-          {animeLoading && (
-            <div className="ed-loader-wrap" aria-label="Loading anime recommendations">
-              <Loader />
-            </div>
-          )}
-          {animeError && (
-            <p className="ed-error" role="alert">Failed to load anime recommendations. Please try again later.</p>
-          )}
           {!animeLoading && !animeError && (
-            <div className="ed-media-grid" role="list" aria-label="Anime recommendation list">
+            <div className="ed-media-grid">
               {trendingAnime.map((item) => (
-                <div key={item.mal_id} role="listitem">
-                  <MediaCard item={item} type="anime" />
-                </div>
+                <MediaCard key={item.mal_id} item={item} type="anime" />
               ))}
             </div>
           )}
@@ -441,20 +465,10 @@ export default function RootPage() {
             </Link>
           </div>
 
-          {mangaLoading && (
-            <div className="ed-loader-wrap" aria-label="Loading manga recommendations">
-              <Loader />
-            </div>
-          )}
-          {mangaError && (
-            <p className="ed-error" role="alert">Failed to load manga recommendations. Please try again later.</p>
-          )}
           {!mangaLoading && !mangaError && (
-            <div className="ed-media-grid" role="list" aria-label="Manga recommendation list">
+            <div className="ed-media-grid">
               {popularManga.map((item) => (
-                <div key={item.mal_id} role="listitem">
-                  <MediaCard item={item} type="manga" />
-                </div>
+                <MediaCard key={item.mal_id} item={item} type="manga" />
               ))}
             </div>
           )}
@@ -469,13 +483,13 @@ export default function RootPage() {
             <div className="ed-community__copy">
               <span className="ed-eyebrow">Join the Family</span>
               <h2 id="community-heading" className="ed-section__title">
-                One Community.<br />
+                One Community.
+                <br />
                 <span className="ed-highlight">EliasDex.</span>
               </h2>
-              <p className="ed-section__sub" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-                Connect with fellow anime and manga lovers in our Discord server.
-                Discuss your favourite series, discover hidden gems, and be the first to know
-                about new releases and platform updates.
+              <p className="ed-section__sub" style={{ textAlign: "left", marginBottom: "1.5rem" }}>
+                Connect with fellow anime and manga lovers in our Discord server. Discuss your favourite series,
+                discover hidden gems, and be the first to know about new releases and platform updates.
               </p>
 
               <ul className="ed-community__perks" aria-label="Community benefits">
@@ -520,7 +534,7 @@ export default function RootPage() {
                   frameBorder="0"
                   sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
                   title="EliasDex Discord Server"
-                  style={{ borderRadius: '12px', display: 'block' }}
+                  style={{ borderRadius: "12px", display: "block" }}
                 />
               </div>
 
@@ -542,7 +556,8 @@ export default function RootPage() {
           <div className="ed-section__header">
             <span className="ed-eyebrow">Simple as 1-2-3</span>
             <h2 id="how-heading" className="ed-section__title">
-              How to Get Started in<br />
+              How to Get Started in
+              <br />
               <span className="ed-highlight">Under 30 Seconds</span>
             </h2>
             <p className="ed-section__sub">
@@ -570,13 +585,16 @@ export default function RootPage() {
               Explore by <span className="ed-highlight">Genre</span>
             </h2>
             <p className="ed-section__sub">
-              From heart-pounding action to wholesome slice of life — we cover every corner of the anime and manga universe.
+              From heart-pounding action to wholesome slice of life — we cover every corner of the anime and manga
+              universe.
             </p>
           </div>
           <div className="ed-genre-grid">
             {genres.map((g) => (
               <Link key={g.id} href={`/search?genres=${g.id}`} className="ed-genre-card">
-                <span className="ed-genre-card__emoji" aria-hidden="true">{g.emoji}</span>
+                <span className="ed-genre-card__emoji" aria-hidden="true">
+                  {g.emoji}
+                </span>
                 <span className="ed-genre-card__name">{g.name}</span>
                 <span className="ed-genre-card__count">{g.count} titles</span>
               </Link>
@@ -593,21 +611,21 @@ export default function RootPage() {
             <h2 id="testimonials-heading" className="ed-section__title">
               What Our <span className="ed-highlight">Community</span> Says
             </h2>
-            <p className="ed-section__sub">
-              Real fans from 140+ countries share their experience with EliasDex.
-            </p>
+            <p className="ed-section__sub">Real fans from 140+ countries share their experience with EliasDex.</p>
           </div>
           <div className="ed-testimonials-grid">
             {testimonials.map((t) => (
               <article key={t.name} className="ed-testimonial-card">
                 <div className="ed-testimonial-card__stars" aria-label={`${t.rating} out of 5 stars`}>
                   {Array.from({ length: t.rating }).map((_, i) => (
-                    <FaStar key={i} className="inline text-amber-400" style={{ fontSize: '0.75rem' }} />
+                    <FaStar key={i} className="inline text-amber-400" style={{ fontSize: "0.75rem" }} />
                   ))}
                 </div>
                 <p className="ed-testimonial-card__text">&ldquo;{t.text}&rdquo;</p>
                 <div className="ed-testimonial-card__author">
-                  <div className="ed-testimonial-card__avatar" aria-hidden="true">{t.avatar}</div>
+                  <div className="ed-testimonial-card__avatar" aria-hidden="true">
+                    {t.avatar}
+                  </div>
                   <div>
                     <p className="ed-testimonial-card__name">{t.name}</p>
                     <p className="ed-testimonial-card__country">{t.country}</p>
@@ -633,18 +651,17 @@ export default function RootPage() {
           </div>
           <div className="ed-faq-list" role="list">
             {faqs.map((faq, i) => (
-              <div
-                key={i}
-                className={`ed-faq-item${openFaq === i ? ' ed-faq-item--open' : ''}`}
-                role="listitem"
-              >
+              <div key={i} className={`ed-faq-item${openFaq === i ? " ed-faq-item--open" : ""}`} role="listitem">
                 <button
                   className="ed-faq-item__question"
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   aria-expanded={openFaq === i}
                 >
                   <span>{faq.q}</span>
-                  <FaChevronRight className={`ed-faq-item__chevron${openFaq === i ? ' ed-faq-item__chevron--open' : ''}`} aria-hidden="true" />
+                  <FaChevronRight
+                    className={`ed-faq-item__chevron${openFaq === i ? " ed-faq-item__chevron--open" : ""}`}
+                    aria-hidden="true"
+                  />
                 </button>
                 {openFaq === i && (
                   <div className="ed-faq-item__answer">
@@ -663,7 +680,9 @@ export default function RootPage() {
         <div className="ed-container ed-cta__inner">
           <span className="ed-eyebrow ed-eyebrow--dark">100% Free Forever</span>
           <h2 id="cta-heading" className="ed-cta__title">
-            Ready to Start Your<br />Anime Journey?
+            Ready to Start Your
+            <br />
+            Anime Journey?
           </h2>
           <p className="ed-cta__sub">
             No credit card. No subscription. No ads. Just pure anime and manga bliss, forever free.

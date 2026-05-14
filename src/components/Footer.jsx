@@ -34,7 +34,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/top/anime"
+                  href="/search?type=tv&order_by=start_date&page=1"
                   className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Top Anime
@@ -42,18 +42,18 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/seasons"
+                  href="/comic"
                   className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
-                  Seasons
+                  Comic Library
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/schedule"
+                  href="/donate"
                   className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
-                  Schedule
+                  Donate
                 </Link>
               </li>
             </ul>
@@ -85,7 +85,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/privacy"
+                  href="https://myanimelist.net/about/privacy_policy"
                   className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Privacy Policy
@@ -93,7 +93,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  href="/terms"
+                  href="https://myanimelist.net/membership/terms_of_use"
                   className="text-gray-400 hover:text-white transition-colors duration-200"
                 >
                   Terms of Service
@@ -125,7 +125,7 @@ const Footer = () => {
                 <FaLinkedin />
               </a>
               <a
-                href="https://discord.gg/"
+                href="https://discord.gg/F3NjgWXwKv"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white text-2xl transition-all duration-200 hover:scale-110"

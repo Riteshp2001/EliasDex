@@ -29,7 +29,7 @@ const Sidebar = () => {
 
   return (
     <div
-      className={`sidebar transition-all fixed overflow-scroll h-full z-[200] inset-0 w-64 md:w-80  bg-[rgba(255, 255, 255, 0.25);] ${
+      className={`sidebar transition-all fixed overflow-scroll h-full z-[200] inset-0 w-64 md:w-80  bg-[rgba(116, 116, 116, 0.41);] ${
         isSidebarOpen ? "translate-x-0" : "translate-x-[-100%]"
       }`}
     >
@@ -45,7 +45,7 @@ const Sidebar = () => {
           <li
             key={item.link}
             onClick={sidebarHandler}
-            className=" py-4 pl-4 hover:text-primary  text-base md:text-lg border-b border-[rgba(255, 255, 255, 0.05)] w-full"
+            className=" py-4 pl-4 hover:text-primary text-base md:text-lg border-b border-[rgba(255, 255, 255, 0)] w-full"
           >
             <Link href={item.link}>{item.name}</Link>
           </li>

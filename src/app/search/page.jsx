@@ -1,13 +1,6 @@
 ﻿"use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useCallback,
-  useRef,
-  memo,
-} from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, memo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import Head from "next/head";
@@ -16,6 +9,7 @@ import Image from "@/components/Image";
 import Footer from "@/components/Footer";
 import Pagination from "@/components/Pagination";
 import { genres } from "@/utils/genres";
+import AnimeCard from "@/components/AnimeCard";
 
 // ─── DEDUPLICATION UTILITY ─────────────────────────────────────────
 const dedupeByKey = (arr, key = "id") => {
@@ -149,9 +143,7 @@ const Sel = ({ value, onChange, options }) => (
 
 const FLabel = ({ label, children }) => (
   <div>
-    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#3d5166]">
-      {label}
-    </p>
+    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#3d5166]">{label}</p>
     {children}
   </div>
 );
@@ -214,7 +206,7 @@ const SearchResults = memo(function SearchResults() {
 
   const hasActiveSearch = useMemo(
     () => !!(qParam || typeParam || statusParam || orderByParam || genresRaw || genresExRaw || unapprovedParam),
-    [qParam, typeParam, statusParam, orderByParam, genresRaw, genresExRaw, unapprovedParam]
+    [qParam, typeParam, statusParam, orderByParam, genresRaw, genresExRaw, unapprovedParam],
   );
 
   // Fetch data dengan abort
@@ -279,7 +271,7 @@ const SearchResults = memo(function SearchResults() {
       p.set("page", String(n));
       router.push(`/search?${p.toString()}`);
     },
-    [searchParams, router]
+    [searchParams, router],
   );
 
   const pushWithout = useCallback(
@@ -289,7 +281,7 @@ const SearchResults = memo(function SearchResults() {
       p.set("page", "1");
       router.push(`/search?${p.toString()}`);
     },
-    [searchParams, router]
+    [searchParams, router],
   );
 
   const handleSubmit = useCallback(
@@ -309,7 +301,7 @@ const SearchResults = memo(function SearchResults() {
       router.push(`/search?${p.toString()}`);
       setFilterOpen(false);
     },
-    [form, router]
+    [form, router],
   );
 
   const handleClear = useCallback(() => {
@@ -317,9 +309,12 @@ const SearchResults = memo(function SearchResults() {
     setFilterOpen(false);
   }, [router]);
 
-  const sf = useCallback((key) => (e) => {
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
-  }, []);
+  const sf = useCallback(
+    (key) => (e) => {
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    },
+    [],
+  );
 
   const activeCount = useMemo(() => {
     let n = 0;
@@ -352,7 +347,12 @@ const SearchResults = memo(function SearchResults() {
                 stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"
+                />
               </svg>
               <input
                 type="text"
@@ -441,7 +441,10 @@ const SearchResults = memo(function SearchResults() {
                       </h3>
                       <div className="max-h-40 overflow-y-auto rounded-lg border border-[#1e2d3d] bg-[#0b1421] p-1">
                         {genres.map((g) => (
-                          <label key={g.mal_id} className="flex items-center gap-2 px-2 py-1 text-xs text-white hover:bg-[#1a2535] cursor-pointer">
+                          <label
+                            key={g.mal_id}
+                            className="flex items-center gap-2 px-2 py-1 text-xs text-white hover:bg-[#1a2535] cursor-pointer"
+                          >
                             <input
                               type="checkbox"
                               value={g.mal_id}
@@ -450,7 +453,9 @@ const SearchResults = memo(function SearchResults() {
                                 const val = Number(e.target.value);
                                 setForm((prev) => ({
                                   ...prev,
-                                  genres: e.target.checked ? [...prev.genres, val] : prev.genres.filter((id) => id !== val),
+                                  genres: e.target.checked
+                                    ? [...prev.genres, val]
+                                    : prev.genres.filter((id) => id !== val),
                                 }));
                               }}
                               className="accent-[#f59e0b]"
@@ -466,7 +471,10 @@ const SearchResults = memo(function SearchResults() {
                       </h3>
                       <div className="max-h-32 overflow-y-auto rounded-lg border border-[#1e2d3d] bg-[#0b1421] p-1">
                         {genres.map((g) => (
-                          <label key={g.mal_id} className="flex items-center gap-2 px-2 py-1 text-xs text-white hover:bg-[#1a2535] cursor-pointer">
+                          <label
+                            key={g.mal_id}
+                            className="flex items-center gap-2 px-2 py-1 text-xs text-white hover:bg-[#1a2535] cursor-pointer"
+                          >
                             <input
                               type="checkbox"
                               value={g.mal_id}
@@ -475,7 +483,9 @@ const SearchResults = memo(function SearchResults() {
                                 const val = Number(e.target.value);
                                 setForm((prev) => ({
                                   ...prev,
-                                  genres_exclude: e.target.checked ? [...prev.genres_exclude, val] : prev.genres_exclude.filter((id) => id !== val),
+                                  genres_exclude: e.target.checked
+                                    ? [...prev.genres_exclude, val]
+                                    : prev.genres_exclude.filter((id) => id !== val),
                                 }));
                               }}
                               className="accent-[#f59e0b]"
@@ -509,10 +519,18 @@ const SearchResults = memo(function SearchResults() {
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3 border-t border-[#111d2b] bg-[#090f1a] px-5 py-3">
-                <button type="button" onClick={handleClear} className="text-xs text-[#3d5166] hover:text-[#f87171] transition">
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="text-xs text-[#3d5166] hover:text-[#f87171] transition"
+                >
                   Reset all filters
                 </button>
-                <button type="button" onClick={handleSubmit} className="rounded-lg bg-[#f59e0b] px-5 py-1.5 text-xs font-semibold text-black hover:bg-[#d97706] transition">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="rounded-lg bg-[#f59e0b] px-5 py-1.5 text-xs font-semibold text-black hover:bg-[#d97706] transition"
+                >
                   Apply filters
                 </button>
               </div>
@@ -526,10 +544,19 @@ const SearchResults = memo(function SearchResults() {
             {typeParam && <Chip label={`Type: ${typeParam}`} onRemove={() => pushWithout("type")} />}
             {statusParam && <Chip label={`Status: ${statusParam}`} onRemove={() => pushWithout("status")} />}
             {orderByParam && <Chip label={`Order: ${orderByParam}`} onRemove={() => pushWithout("order_by")} />}
-            {sortParam && sortParam !== "desc" && <Chip label={`Sort: ${sortParam === "asc" ? "↑ Asc" : "↓ Desc"}`} onRemove={() => pushWithout("sort")} />}
+            {sortParam && sortParam !== "desc" && (
+              <Chip label={`Sort: ${sortParam === "asc" ? "↑ Asc" : "↓ Desc"}`} onRemove={() => pushWithout("sort")} />
+            )}
             {sfwParam === "false" && <Chip label="NSFW" onRemove={() => pushWithout("sfw")} />}
-            {genresRaw && <Chip label={`${genresParam.length} genre(s) included`} onRemove={() => pushWithout("genres")} />}
-            {genresExRaw && <Chip label={`${genresExcludeParam.length} genre(s) excluded`} onRemove={() => pushWithout("genres_exclude")} />}
+            {genresRaw && (
+              <Chip label={`${genresParam.length} genre(s) included`} onRemove={() => pushWithout("genres")} />
+            )}
+            {genresExRaw && (
+              <Chip
+                label={`${genresExcludeParam.length} genre(s) excluded`}
+                onRemove={() => pushWithout("genres_exclude")}
+              />
+            )}
             {unapprovedParam && <Chip label="Unapproved" onRemove={() => pushWithout("unapproved")} />}
           </div>
         )}
@@ -538,7 +565,8 @@ const SearchResults = memo(function SearchResults() {
         {data?.pagination?.items?.total != null && hasActiveSearch && (
           <p className="mb-3 text-xs text-[#3d5166] tabular-nums">
             {data.pagination.items.total.toLocaleString()} results
-            {data.pagination.last_visible_page > 1 && ` · page ${data.pagination.current_page} of ${data.pagination.last_visible_page}`}
+            {data.pagination.last_visible_page > 1 &&
+              ` · page ${data.pagination.current_page} of ${data.pagination.last_visible_page}`}
           </p>
         )}
 
@@ -546,7 +574,12 @@ const SearchResults = memo(function SearchResults() {
         {!hasActiveSearch ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3 opacity-30">
             <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1}
+                d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"
+              />
             </svg>
             <p className="text-sm text-center px-4">Type a keyword or open Filters to search</p>
           </div>
@@ -557,10 +590,16 @@ const SearchResults = memo(function SearchResults() {
         ) : isError ? (
           <div className="flex flex-col items-center py-24 gap-3 text-center px-4">
             <p className="text-sm text-[#f87171]">{errorMessage || "Failed to load results."}</p>
-            <button onClick={() => window.location.reload()} className="rounded-lg bg-[#f59e0b] px-4 py-2 text-xs font-semibold text-black hover:bg-[#d97706] transition">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-[#f59e0b] px-4 py-2 text-xs font-semibold text-black hover:bg-[#d97706] transition"
+            >
               ↻ Refresh page
             </button>
-            <button onClick={() => router.push(`/search?${searchParams.toString()}`)} className="text-xs text-[#3d5166] hover:text-white">
+            <button
+              onClick={() => router.push(`/search?${searchParams.toString()}`)}
+              className="text-xs text-[#3d5166] hover:text-white"
+            >
               Try again
             </button>
           </div>
@@ -573,7 +612,7 @@ const SearchResults = memo(function SearchResults() {
             {/* ✅ RUBIHAN UTAMA: 2 kolom di mobile (grid-cols-2) */}
             <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {data.data.map((item) => (
-                <Image key={item.mal_id} alt={item.title} data={item} />
+                <AnimeCard key={item.mal_id} alt={item.title} data={item} />
               ))}
             </div>
             <div className="mt-6">
