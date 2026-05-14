@@ -1,13 +1,7 @@
-import withObfuscator from 'nextjs-obfuscator';
+import createNextJsObfuscator from "nextjs-obfuscator";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Fix peringatan Workspace Root
-  experimental: {
-    turbo: {
-      root: '.', // Memaksa Turbopack melihat folder EliasDex sebagai root
-    },
-  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.myanimelist.net' },
@@ -19,11 +13,9 @@ const nextConfig = {
     ],
   },
   poweredByHeader: false,
-  compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
-  },
 };
 
+// Konfigurasi obfuscator sesuai API docs
 const obfuscatorOptions = {
   compact: true,
   controlFlowFlattening: true,
@@ -35,7 +27,14 @@ const obfuscatorOptions = {
   stringArrayThreshold: 0.75,
   splitStrings: true,
   unicodeEscapeSequence: true,
+  disableConsoleOutput: false, // Disarankan false oleh docs agar tidak break React
 };
 
-// Obfuscator hanya jalan kalau Webpack digunakan
-export default withObfuscator(obfuscatorOptions)(nextConfig);
+const pluginOptions = {
+  enabled: "detect", // Otomatis aktif hanya saat build produksi
+  log: true,
+};
+
+const withNextJsObfuscator = createNextJsObfuscator(obfuscatorOptions, pluginOptions);
+
+export default withNextJsObfuscator(nextConfig);
