@@ -2,6 +2,11 @@ import createNextJsObfuscator from "nextjs-obfuscator";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    turbo: {
+      root: '.',
+    },
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.myanimelist.net' },
