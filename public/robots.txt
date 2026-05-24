@@ -2,5 +2,5 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /_next/
-Sitemap: /sitemap.xml
+Sitemap: https://eliasdex.farelhanafi.my.id/sitemap.xml
 # If you deploy to a custom domain, keep this path as /sitemap.xml
